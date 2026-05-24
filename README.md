@@ -1,9 +1,5 @@
 # NAV-MIS: Sistem Integrasi Manajemen Galangan Kapal
 
-**Version 2.0.0** - Modern, Fully Structured & User-Friendly Shipyard Management System
-
----
-
 ## 📋 Daftar Isi
 - [Fitur Utama](#fitur-utama)
 - [Struktur Proyek](#struktur-proyek)
@@ -57,43 +53,6 @@ SIBS/
 │   └── bg.jpg                  # Background images
 └── README.md                   # Documentation
 ```
-
----
-
-## 🚀 Instalasi & Setup
-
-### 1. Clone/Extract Repository
-```bash
-cd c:\Users\User\NAGOTZ\SIBS\SIBS
-```
-
-### 2. Install Dependencies
-```bash
-python -m pip install -r requirements.txt
-```
-
-Atau manual:
-```bash
-python -m pip install streamlit pandas python-dotenv
-```
-
-### 3. Setup Environment Variables
-```bash
-# File .env sudah disediakan, modifikasi jika diperlukan
-cat .env
-```
-
-### 4. Initialize Database
-Database otomatis tercipta saat aplikasi pertama kali dijalankan.
-
-### 5. Run Application
-```bash
-streamlit run app.py
-```
-
-Aplikasi akan tersedia di: `http://localhost:8501`
-
----
 
 ## 🎯 Cara Menggunakan
 
