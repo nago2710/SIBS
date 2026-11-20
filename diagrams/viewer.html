@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIBS — Diagram Viewer Bab IV (Skripsi / Laporan)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #1E3A8A;
+            --primary-dark: #172554;
+            --accent: #16A34A;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar Navigation */
+        #sidebar {
+            width: 340px; background-color: #FFFFFF; border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; flex-shrink: 0; height: 100%;
+        }
+        .sidebar-header {
+            padding: 24px 20px; border-bottom: 1px solid var(--border); background-color: #FFFFFF;
+        }
+        .sidebar-header h2 { font-size: 18px; font-weight: 800; color: var(--primary); }
+        .sidebar-header p { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+        
+        .nav-list { flex: 1; overflow-y: auto; padding: 12px 10px; }
+        .nav-item {
+            padding: 12px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600;
+            color: #334155; cursor: pointer; margin-bottom: 6px; transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: space-between; border: 1px solid transparent;
+        }
+        .nav-item:hover { background-color: #F1F5F9; color: var(--primary); }
+        .nav-item.active {
+            background-color: #EFF6FF; color: var(--primary); border-color: #BFDBFE; font-weight: 700;
+        }
+        .badge {
+            font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #E2E8F0; color: #475569;
+        }
+        .nav-item.active .badge { background: var(--primary); color: #FFFFFF; }
+
+        /* Content Area */
+        #content { flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .topbar {
+            padding: 18px 32px; background: #FFFFFF; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .topbar-info h1 { font-size: 20px; font-weight: 800; color: var(--text-main); }
+        .topbar-info p { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+        .btn-group { display: flex; gap: 10px; }
+        button {
+            padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600;
+            cursor: pointer; border: 1px solid transparent; transition: all 0.2s;
+        }
+        .btn-primary { background-color: var(--primary); color: #FFFFFF; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-outline { background-color: #FFFFFF; border-color: var(--border); color: #334155; }
+        .btn-outline:hover { background-color: #F1F5F9; }
+
+        /* Diagram Canvas */
+        .canvas-area {
+            flex: 1; overflow: auto; padding: 32px; display: flex; flex-direction: column; align-items: center;
+        }
+        .caption-card {
+            background: #FFFFFF; border: 1px solid var(--border); border-left: 4px solid var(--accent);
+            border-radius: 8px; padding: 16px 20px; width: 100%; max-width: 1100px; margin-bottom: 24px;
+            font-size: 13px; line-height: 1.6; color: #334155; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .caption-card strong { color: var(--primary); }
+
+        .diagram-container {
+            background: #FFFFFF; border: 1px solid var(--border); border-radius: 8px;
+            padding: 40px; width: 100%; max-width: 1100px; display: flex; justify-content: center;
+            box-shadow: 0 4px 12px rgba(15,23,42,0.03); min-height: 480px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>SIBS DIAGRAM VIEWER</h2>
+            <p>BAB IV LAPORAN SKRIPSI / TUGAS AKHIR</p>
+        </div>
+        <div class="nav-list" id="navList">
+            <!-- Nav items populated via JS -->
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="content">
+        <div class="topbar">
+            <div class="topbar-info">
+                <h1 id="diagramTitle">Memuat Diagram...</h1>
+                <p id="diagramSubtitle">SIBS Shipyard Integrated Business System</p>
+            </div>
+            <div class="btn-group">
+                <button class="btn-outline" onclick="copyCaption()">📋 Salin Caption Word</button>
+                <button class="btn-primary" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div class="caption-card" id="captionCard">
+                <!-- Caption Text -->
+            </div>
+            <div class="diagram-container">
+                <div id="mermaidTarget" class="mermaid">
+                    <!-- Mermaid rendering target -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'neutral',
+            fontFamily: 'Inter',
+            securityLevel: 'loose'
+        });
+
+        const diagrams = [
+            {
+                id: 1,
+                name: "4.1 Arsitektur Sistem Global",
+                badge: "Arsitektur",
+                title: "Gambar 4.1 Arsitektur Sistem Terintegrasi SIBS",
+                caption: "<strong>Gambar 4.1 Arsitektur Sistem Terintegrasi SIBS (Shipyard Integrated Business System)</strong><br>Mengilustrasikan arsitektur sistem berlapis (layered architecture) yang menghubungkan Frontend Streamlit, Business Logic 7 Departemen, Auth PBKDF2, dan Supabase Cloud Database.",
+                code: `flowchart TD
+    subgraph UI["1. LAPISAN PRESENTASI (STREAMLIT)"]
+        Landing["Portal Landing Page SIBS"]
+        Login["Portal Otentikasi Multi-Role"]
+        Sidebar["Navigasi & Project Selector"]
+        PrintView["Cetak Resmi Lembar BAP"]
+    end
+    subgraph Sec["2. KEAMANAN & OTENTIKASI"]
+        Auth["PBKDF2-SHA256 (100k Iterasi)"]
+        RBAC["Role-Based Access Control"]
+        Audit["Audit Logging Otomatis"]
+    end
+    subgraph Biz["3. LOGIKA BISNIS 7 DEPARTEMEN"]
+        D1["Perencanaan (Dimensi & PWBS)"]
+        D2["Produksi (Jadwal & Cutting/Welding)"]
+        D3["Pembelian (Supplier & PO)"]
+        D4["QA/QC (39 Standar Uji BKI)"]
+        D5["Gudang (Stok & Mutasi)"]
+        D6["Fasilitas (Crane, Dock, Maint)"]
+        D7["Eksekutif (Kurva S & Cetak BAP)"]
+    end
+    subgraph DB["4. DATABASE CLOUD (SUPABASE POSTGRESQL)"]
+        T1[("users, audit_log")]
+        T2[("kapal, blok, pwbs_detail")]
+        T3[("schedule_detail, produksi_data")]
+        T4[("supplier, purchase_order")]
+        T5[("gudang_barang, gudang_mutasi, permintaan_material")]
+        T6[("inspeksi_qc (39 Kategori)")]
+        T7[("fasilitas, maintenance, usage")]
+    end
+    UI --> Sec --> Biz <--> DB`
+            },
+            {
+                id: 2,
+                name: "4.2 Flowchart Perencanaan",
+                badge: "Dept 1",
+                title: "Gambar 4.2 Diagram Alir Perencanaan Desain, Blok & PWBS",
+                caption: "<strong>Gambar 4.2 Diagram Alir Perencanaan Desain, Blok & PWBS</strong><br>Alur input spesifikasi kapal, kalkulasi koefisien bentuk, pembagian blok lambung HS-04/06, kodifikasi PWBS level 1-4, dan verifikasi Drawing Register.",
+                code: `flowchart TD
+    A(["Mulai Perencanaan"]) --> B["Input Dimensi Utama (LOA, LBP, B, H, T, GT)"]
+    B --> C["Input Koefisien Bentuk (Cb, Cm, Cw, Cp)"]
+    C --> D["Simpan Master Kapal (Tabel kapal)"]
+    D --> E["Definisikan Pembagian Blok (HS-04, HS-06)"]
+    E --> F["Breakdown Hierarki PWBS (Level 1 s/d Level 4)"]
+    F --> G["Verifikasi Drawing Register & Status Approval BKI/Owner"]
+    G --> H{"Apakah Drawing Disetujui?"}
+    H -- "Revisi" --> G
+    H -- "Approved" --> I["Rilis Gambar Kerja ke Produksi Lapangan"]
+    I --> J(["Selesai"])`
+            },
+            {
+                id: 3,
+                name: "4.3 Flowchart Produksi",
+                badge: "Dept 2",
+                title: "Gambar 4.3 Diagram Alir Pelaksanaan Produksi Lapangan",
+                caption: "<strong>Gambar 4.3 Diagram Alir Pelaksanaan Produksi Lapangan</strong><br>Alur pengendalian jadwal perakitan WBS, requisition material ke gudang, pencatatan pemotongan dan pengelasan komponen per frame, serta update progres fisik aktual.",
+                code: `flowchart TD
+    A(["Mulai Produksi"]) --> B["Tarik Jadwal WBS Blok HS-06 (Tabel schedule_detail)"]
+    B --> C{"Apakah Material Tersedia?"}
+    C -- "Tidak" --> D["Ajukan Permintaan Material (Tabel permintaan_material)"]
+    D --> E["Gudang Memverifikasi & Mengeluarkan Barang"]
+    E --> F["Pekerjaan Fabrikasi (Cutting, Fit-up, Welding SAW/FCAW)"]
+    C -- "Ya" --> F
+    F --> G["Catat Aktivitas Harian (Tabel produksi_data)"]
+    G --> H["Permohonan Inspeksi QA/QC"]
+    H --> I{"Hasil Uji Mutu?"}
+    I -- "Reject" --> J["Lakukan Remedial Work (Perbaikan Lasan)"]
+    J --> F
+    I -- "Approved" --> K["Update Progres Fisik Sub-Pekerjaan (%)"]
+    K --> L["Data Terkoneksi Otomatis ke Kurva S Eksekutif"]
+    L --> M(["Tahap Selesai"])`
+            },
+            {
+                id: 4,
+                name: "4.4 Flowchart Pembelian",
+                badge: "Dept 3",
+                title: "Gambar 4.4 Diagram Alir Pengadaan & Purchase Order (PO)",
+                caption: "<strong>Gambar 4.4 Diagram Alir Pengadaan & Purchase Order (PO)</strong><br>Alur seleksi rekanan supplier, penerbitan PO bertahap (Draft -> Submitted -> Approved -> Delivered), pemantauan logistik, dan serah terima ke gudang.",
+                code: `flowchart TD
+    A(["Mulai Pengadaan"]) --> B["Terima Kebutuhan Material / Low-Stock Alert"]
+    B --> C["Cari Rekanan pada Master Supplier (Tabel supplier)"]
+    C --> D["Buat Purchase Order Baru (Status: Draft)"]
+    D --> E["Review Anggaran & Approval Kepala Logistik"]
+    E --> F{"Disetujui?"}
+    F -- "Tidak" --> G["Batalkan PO (Status: Cancelled)"]
+    F -- "Ya" --> H["Approve PO & Kirim ke Rekanan (Status: Submitted)"]
+    H --> I["Tracking Pengiriman Material ke Galangan"]
+    I --> J["Serah Terima Fisik Barang ke Gudang (Status: Delivered)"]
+    J --> K(["Selesai / Dicatat di Audit Log"])`
+            },
+            {
+                id: 5,
+                name: "4.5 Flowchart QA/QC",
+                badge: "Dept 4",
+                title: "Gambar 4.5 Diagram Alir Pengendalian Mutu & 39 Standar BKI",
+                caption: "<strong>Gambar 4.5 Diagram Alir Pengendalian Mutu Berbasis 39 Standar Uji BKI</strong><br>Alur inspeksi NDT las, tightness test, verifikasi standar klasifikasi, approval digital, dan monitoring remedial work.",
+                code: `flowchart TD
+    A(["Mulai Inspeksi QA/QC"]) --> B["Terima Permintaan Uji Komponen Blok"]
+    B --> C["Pilih Kategori Uji dari 39 Standar Klasifikasi BKI"]
+    C --> D["Laksanakan Uji Fisik (Visual VT, NDT Ultrasonic UT, Radiography RT, Vacuum)"]
+    D --> E["Catat Temuan pada Form Inspeksi (Tabel inspeksi_qc)"]
+    E --> F{"Memenuhi Standar Klasifikasi?"}
+    F -- "Reject (Defect)" --> G["Status: Rejected & Masuk Rekapitulasi Remedial Work"]
+    G --> H["Tim Produksi Melakukan Perbaikan / Re-Weld"]
+    H --> D
+    F -- "Pending" --> I["Menunggu Kelengkapan Uji Lab"]
+    F -- "Approved" --> J["Status: Approved & Terekam Identitas Surveyor"]
+    J --> K["Update Statistik Mutu di Dashboard Eksekutif"]
+    K --> L(["Komponen Lolos Uji"])`
+            },
+            {
+                id: 6,
+                name: "4.6 Flowchart Gudang",
+                badge: "Dept 5",
+                title: "Gambar 4.6 Diagram Alir Inventaris & Mutasi Stok Gudang",
+                caption: "<strong>Gambar 4.6 Diagram Alir Inventaris & Mutasi Stok Gudang</strong><br>Alur pencatatan barang masuk dari PO, penyimpanan rak/yard, persetujuan requisition produksi, mutasi pengurangan stok otomatis, dan low-stock alert.",
+                code: `flowchart TD
+    A(["Mulai Pengelolaan Gudang"]) --> B{"Pilih Aktivitas"}
+    B -- "Barang Masuk (PO)" --> C["Penerimaan Material dari Supplier"]
+    C --> D["Input Mutasi Masuk (Tabel gudang_mutasi)"]
+    D --> E["Stok Otomatis Bertambah (stok_current + jumlah)"]
+    B -- "Permintaan Produksi" --> F["Review Permintaan Material (Tabel permintaan_material)"]
+    F --> G{"Stok Gudang Cukup?"}
+    G -- "Tidak" --> H["Tolak Permintaan & Beri Catatan"]
+    G -- "Ya" --> I["Setujui & Keluarkan Barang"]
+    I --> J["Input Mutasi Keluar & Stok Otomatis Berkurang"]
+    J --> K{"Stok <= Batas Minimum?"}
+    K -- "Ya" --> L["Aktifkan Indikator Low-Stock Alert Merah"]
+    K -- "Tidak" --> M["Selesai / Stok Aman"]
+    L --> M(["Selesai"])`
+            },
+            {
+                id: 7,
+                name: "4.7 Flowchart Fasilitas",
+                badge: "Dept 6",
+                title: "Gambar 4.7 Diagram Alir Fasilitas, Maintenance & Utilisasi",
+                caption: "<strong>Gambar 4.7 Diagram Alir Fasilitas, Maintenance & Utilisasi</strong><br>Pemantauan status gantry crane, drydock, plasma cutting, pengajuan maintenance berkala, serta pembebanan biaya harian fasilitas ke proyek aktif.",
+                code: `flowchart TD
+    A(["Mulai Manajemen Fasilitas"]) --> B["Monitoring Status Alat & Kesiapan Sertifikasi K3"]
+    B --> C{"Pilih Operasional"}
+    C -- "Maintenance Alat" --> D["Ajukan Request Perawatan (Preventive/Repair/Overhaul)"]
+    D --> E["Pelaksanaan Perbaikan oleh Tim Teknisi"]
+    E --> F["Update Status: Selesai & Alat Kembali Operasional"]
+    C -- "Penggunaan Proyek" --> G["Input Pencatatan Utilisasi Alat Berat (Tabel fasilitas_usage)"]
+    G --> H["Hitung Biaya = Durasi x Tarif Sewa Harian"]
+    H --> I["Integrasikan Biaya Fasilitas ke Rekap Biaya Eksekutif"]
+    I --> J(["Selesai"])`
+            },
+            {
+                id: 8,
+                name: "4.8 Flowchart Eksekutif & BAP",
+                badge: "Dept 7",
+                title: "Gambar 4.8 Diagram Alir Dashboard Eksekutif & Cetak BAP",
+                caption: "<strong>Gambar 4.8 Diagram Alir Dashboard Eksekutif & Cetak BAP</strong><br>Agregasi data real-time seluruh departemen, plotting Kurva S rencana vs realisasi, analisis deviasi biaya, dan penerbitan Berita Acara Pemeriksaan (BAP) siap cetak A4.",
+                code: `flowchart TD
+    A(["Mulai Akses Eksekutif"]) --> B["Agregasi Data Real-Time Lintas 6 Departemen"]
+    B --> C["Tampilkan KPI Progres Fisik, Kepatuhan Mutu, dan Defisit Stok"]
+    C --> D["Plotting Grafik Kurva S (Rencana vs Realisasi Aktual)"]
+    D --> E["Evaluasi Deviasi Waktu (Tepat Waktu / Keterlambatan)"]
+    E --> F["Analisis Rekapitulasi Biaya (Material, Upah, Fasilitas, QA)"]
+    F --> G["Buka Generator Berita Acara Pemeriksaan (BAP)"]
+    G --> H["Input Nomor Dokumen, Surveyor Galangan & Owner"]
+    H --> I["Pratinjau Lembar BAP Format Standar"]
+    I --> J["Tekan Cetak / Ctrl+P (CSS Print Otomatis Membentuk Lembar A4 Bersih)"]
+    J --> K(["Dokumen Resmi BAP Siap Ditandatangani"])`
+            },
+            {
+                id: 9,
+                name: "4.9 Cross-Functional Swimlane",
+                badge: "Integrasi",
+                title: "Gambar 4.9 Cross-Functional Swimlane Diagram 7 Departemen",
+                caption: "<strong>Gambar 4.9 Cross-Functional Swimlane Diagram 7 Departemen</strong><br>Peta kolaborasi proses bisnis horizontal dari penetapan desain blok sampai penandatanganan Berita Acara Pemeriksaan.",
+                code: `flowchart LR
+    subgraph PERENCANAAN["1. PERENCANAAN"]
+        p1["Input Desain & PWBS"] --> p2["Rilis Gambar & WBS"]
+    end
+    subgraph PEMBELIAN["2. PEMBELIAN"]
+        b1["Terima Kebutuhan Material"] --> b2["Terbitkan Purchase Order"]
+    end
+    subgraph GUDANG["3. GUDANG"]
+        w1["Terima Material Masuk"]
+        w2["Setujui Request & Mutasi Out"]
+    end
+    subgraph PRODUKSI["4. PRODUKSI"]
+        pr1["Ajukan Permintaan Material"]
+        pr2["Fabrikasi Cutting & Las"]
+        pr3["Update Progres Fisik (%)"]
+    end
+    subgraph FASILITAS["5. FASILITAS"]
+        f1["Sediakan Crane & Mesin"]
+        f2["Catat Biaya Pemakaian"]
+    end
+    subgraph QAQC["6. QA/QC"]
+        q1["Inspeksi 39 Standar BKI"]
+        q2{"Evaluasi Mutu"}
+        q3["Approve Mutu"]
+        q4["Reject (Remedial)"]
+    end
+    subgraph EKSEKUTIF["7. EKSEKUTIF"]
+        e1["Pantau Kurva S & Biaya"]
+        e2["Cetak Lembar Resmi BAP"]
+    end
+    p2 --> b1
+    p2 --> pr1
+    b2 --> w1
+    pr1 --> w2 --> pr2
+    f1 --> pr2 --> f2
+    pr2 --> q1 --> q2
+    q2 -- "Lolos" --> q3 --> pr3
+    q2 -- "Cacat" --> q4 --> pr2
+    pr3 --> e1
+    f2 --> e1 --> e2`
+            },
+            {
+                id: 10,
+                name: "4.10 DFD Level 0 (Konteks)",
+                badge: "DFD",
+                title: "Gambar 4.10 Data Flow Diagram Level 0 (Diagram Konteks)",
+                caption: "<strong>Gambar 4.10 Data Flow Diagram Level 0 (Diagram Konteks SIBS)</strong><br>Memperlihatkan batas sistem informasi dan pertukaran arus data antara SIBS dengan seluruh entitas luar.",
+                code: `flowchart TD
+    SIBS(("SISTEM INFORMASI BISNIS GALANGAN (SIBS)"))
+    E1["Dept. Perencanaan"] <--> SIBS
+    E2["Dept. Produksi"] <--> SIBS
+    E3["Dept. Pembelian"] <--> SIBS
+    E4["Dept. Gudang"] <--> SIBS
+    E5["Dept. QA / QC"] <--> SIBS
+    E6["Dept. Fasilitas"] <--> SIBS
+    E7["Manajemen Eksekutif"] <--> SIBS
+    Ext1["Supplier Rekanan"] <--> SIBS
+    Ext2["Surveyor BKI & Owner"] <--> SIBS`
+            },
+            {
+                id: 11,
+                name: "4.11 DFD Level 1 Dekomposisi",
+                badge: "DFD",
+                title: "Gambar 4.11 Data Flow Diagram Level 1 Dekomposisi Sistem",
+                caption: "<strong>Gambar 4.11 Data Flow Diagram Level 1 Dekomposisi Sistem</strong><br>Dekomposisi fungsional 7 modul proses SIBS beserta interaksi aliran data ke data store Supabase PostgreSQL.",
+                code: `flowchart TD
+    P1(("1.0 Desain & PWBS")) <--> DS1[("DS-1: kapal, blok, pwbs")]
+    P2(("2.0 Produksi Lapangan")) <--> DS2[("DS-2: schedule, produksi")]
+    P3(("3.0 Pengadaan & PO")) <--> DS3[("DS-3: supplier, po")]
+    P4(("4.0 Pengendalian Mutu")) <--> DS4[("DS-4: inspeksi_qc")]
+    P5(("5.0 Inventori Gudang")) <--> DS5[("DS-5: gudang, mutasi, req")]
+    P6(("6.0 Fasilitas & Servis")) <--> DS6[("DS-6: fasilitas, usage")]
+    P7(("7.0 Eksekutif & BAP"))
+    DS1 --> P7
+    DS2 --> P7
+    DS3 --> P7
+    DS4 --> P7
+    DS5 --> P7
+    DS6 --> P7`
+            },
+            {
+                id: 12,
+                name: "4.12 ERD Basis Data Supabase",
+                badge: "ERD",
+                title: "Gambar 4.12 Entity Relationship Diagram (ERD) Basis Data Relasional",
+                caption: "<strong>Gambar 4.12 Entity Relationship Diagram (ERD) Basis Data Relasional SIBS</strong><br>Relasi relasional antar 16+ tabel database Supabase PostgreSQL lengkap dengan foreign keys.",
+                code: `erDiagram
+    kapal ||--o{ blok : "memiliki"
+    kapal ||--o{ schedule_detail : "dijadwalkan"
+    kapal ||--o{ produksi_data : "dikerjakan"
+    kapal ||--o{ permintaan_material : "meminta"
+    kapal ||--o{ inspeksi_qc : "diinspeksi"
+    kapal ||--o{ purchase_order : "didanai"
+    kapal ||--o{ fasilitas_usage : "menggunakan"
+    blok ||--o{ pwbs_detail : "dibagi_menjadi"
+    gudang_barang ||--o{ gudang_mutasi : "bermutasi"
+    gudang_barang ||--o{ permintaan_material : "dikeluarkan"
+    fasilitas ||--o{ fasilitas_maintenance : "diservis"
+    fasilitas ||--o{ fasilitas_usage : "dipakai"
+    users ||--o{ audit_log : "mencatat"`
+            }
+        ];
+
+        let currentIndex = 0;
+
+        function renderNav() {
+            const list = document.getElementById("navList");
+            list.innerHTML = "";
+            diagrams.forEach((d, idx) => {
+                const item = document.createElement("div");
+                item.className = "nav-item " + (idx === currentIndex ? "active" : "");
+                item.onclick = () => selectDiagram(idx);
+                item.innerHTML = `<span>${d.name}</span><span class="badge">${d.badge}</span>`;
+                list.appendChild(item);
+            });
+        }
+
+        async function selectDiagram(index) {
+            currentIndex = index;
+            renderNav();
+            const d = diagrams[index];
+            document.getElementById("diagramTitle").innerText = d.title;
+            document.getElementById("diagramSubtitle").innerText = "Kategori: " + d.badge + " • SIBS Enterprise Edition";
+            document.getElementById("captionCard").innerHTML = d.caption;
+
+            const target = document.getElementById("mermaidTarget");
+            target.removeAttribute("data-processed");
+            target.innerHTML = d.code;
+            await mermaid.run({ nodes: [target] });
+        }
+
+        function copyCaption() {
+            const d = diagrams[currentIndex];
+            const cleanText = d.caption.replace(/<[^>]*>/g, '');
+            navigator.clipboard.writeText(cleanText).then(() => {
+                alert("Caption gambar berhasil disalin ke clipboard! Silakan paste di Word.");
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener("DOMContentLoaded", () => {
+            renderNav();
+            selectDiagram(0);
+        });
+    </script>
+</body>
+</html>

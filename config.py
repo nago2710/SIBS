@@ -1,121 +1,142 @@
 """
-Configuration module for NAV-MIS System
-Handles all configuration, environment variables, and constants
+SIBS: Shipyard Integrated Business System
+Configuration Module — Supabase + App Settings
+
+Sumber: Skripsi Ratih Laratasari Pagayang (Unhas, 2025)
+        + Sistem Informasi Galangan Kecil.xlsm
 """
 
 import os
-from dataclasses import dataclass
+from pathlib import Path
+from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+ENV_PATH = Path(__file__).parent / ".env"
+load_dotenv(ENV_PATH, override=True)
 
 
+# ==================== SUPABASE CONFIG ====================
 @dataclass
-class DatabaseConfig:
-    """Database configuration"""
-    DB_FILE: str = os.getenv("DB_FILE", "database_galangan.db")
-    BACKUP_ENABLED: bool = os.getenv("BACKUP_ENABLED", "true").lower() == "true"
-    BACKUP_INTERVAL: int = int(os.getenv("BACKUP_INTERVAL", "3600"))  # seconds
+class SupabaseConfig:
+    URL: str = os.getenv("SUPABASE_URL", "")
+    KEY: str = os.getenv("SUPABASE_KEY", "")
+
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.URL and self.KEY)
 
 
-@dataclass
-class SecurityConfig:
-    """Security configuration"""
-    PASSWORD_MIN_LENGTH: int = int(os.getenv("PASSWORD_MIN_LENGTH", "6"))
-    MAX_LOGIN_ATTEMPTS: int = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
-    SESSION_TIMEOUT: int = int(os.getenv("SESSION_TIMEOUT", "3600"))  # seconds
-    ENABLE_LOGGING: bool = os.getenv("ENABLE_LOGGING", "true").lower() == "true"
-
-
+# ==================== APP CONFIG ====================
 @dataclass
 class AppConfig:
-    """Application configuration"""
-    APP_TITLE: str = "NAV-MIS: Integrated Shipyard System"
-    APP_ICON: str = "⚓"
-    LAYOUT: str = "wide"
-    VERSION: str = "2.0.0"
+    TITLE: str = "SIBS — Sistem Integrasi Bisnis Galangan Kapal"
+    SHORT_TITLE: str = "SIBS"
+    VERSION: str = "4.0.0"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
 
+# ==================== SECURITY CONFIG ====================
 @dataclass
-class UIConfig:
-    """UI/UX configuration"""
-    PRIMARY_COLOR: str = "#2563eb"
-    DARK_BG: str = "#0b0f19"
-    CARD_BG: str = "#111827"
-    BORDER_COLOR: str = "#1f293d"
-    TEXT_PRIMARY: str = "#f1f5f9"
-    TEXT_SECONDARY: str = "#94a3b8"
-    SUCCESS_COLOR: str = "#4ade80"
-    ERROR_COLOR: str = "#f87171"
-    WARNING_COLOR: str = "#fbbf24"
+class SecurityConfig:
+    PASSWORD_MIN_LENGTH: int = int(os.getenv("PASSWORD_MIN_LENGTH", "6"))
+    MAX_LOGIN_ATTEMPTS: int = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
+    SESSION_TIMEOUT: int = int(os.getenv("SESSION_TIMEOUT", "3600"))
 
 
-# Initialize all configurations
-db_config = DatabaseConfig()
-security_config = SecurityConfig()
+# ==================== INSTANCES ====================
+supabase_config = SupabaseConfig()
 app_config = AppConfig()
-ui_config = UIConfig()
+security_config = SecurityConfig()
 
-# Department roles and permissions
+
+# ==================== DEPARTMENTS ====================
 DEPARTMENTS = {
     "admin": {
         "display": "Administrator",
-        "permissions": ["full_access"]
+        "permissions": ["full_access"],
     },
     "perencanaan": {
-        "display": "Perencanaan & Desain",
-        "permissions": ["view_data", "edit_design"]
+        "display": "Desain & Perencanaan Produksi",
+        "permissions": ["view_data", "edit_design", "manage_pwbs"],
     },
     "produksi": {
         "display": "Produksi Lapangan",
-        "permissions": ["view_data", "update_progress"]
+        "permissions": ["view_data", "update_progress", "request_material"],
     },
     "pembelian": {
         "display": "Pembelian & Logistik",
-        "permissions": ["view_data", "manage_vendors"]
+        "permissions": ["view_data", "manage_vendors", "manage_po"],
     },
-    "qaqa": {
-        "display": "QA / QC",
-        "permissions": ["view_data", "validate_quality"]
+    "qaqc": {
+        "display": "Quality Control / Quality Assurance",
+        "permissions": ["view_data", "validate_quality", "approve_reject"],
     },
     "gudang": {
-        "display": "Gudang Material",
-        "permissions": ["view_data", "manage_inventory"]
+        "display": "Material & Penyimpanan (Gudang)",
+        "permissions": ["view_data", "manage_inventory", "manage_mutasi"],
     },
     "fasilitas": {
         "display": "Manajemen Fasilitas",
-        "permissions": ["view_data", "update_facilities"]
+        "permissions": ["view_data", "manage_facilities", "manage_maintenance"],
     },
     "eksekutif": {
-        "display": "Eksekutif Pemantau",
-        "permissions": ["view_data", "view_reports"]
-    }
+        "display": "Manajemen Eksekutif",
+        "permissions": ["view_data", "view_reports", "export_data"],
+    },
 }
 
-# Default project indicators
-DEFAULT_PROJECT_DATA = [
-    ("Nama Proyek Aktif", "Hull No. 284 - General Cargo Vessel 5000 DWT"),
-    ("Master Schedule", "Tahap Erection Blok & Instalasi Pipa Lambung"),
-    ("PWBS / Area Kerja", "Blok Midship M1 s/d M4"),
-    ("Anggaran Alokasi Proyek", "18500000000"),
-    ("Biaya Konstruksi Terpakai", "9240000000"),
-    ("Volume Stok Pelat Baja (Gudang)", "342"),
-    ("Status Inspeksi QA/QC", "Lolos Uji NDT Radiography Butt Joint Blok M1"),
-    ("Kelayakan Fasilitas Gantry Crane", "Operasional Normal - Sertifikasi Aktif"),
-    ("Target Waktu Peluncuran (Delivery)", "14 November 2026"),
-    ("Vendor Utama Logistik", "PT Krakatau Steel Tbk")
+# ==================== QC INSPECTION CATEGORIES ====================
+# Based on 40+ QC sheets in the Excel VBA file
+QC_CATEGORIES = [
+    {"id": "straightening", "nama": "Straightening", "grup": "Hull Construction"},
+    {"id": "forming_bending", "nama": "Forming and Bending", "grup": "Hull Construction"},
+    {"id": "surface_preparation", "nama": "Surface Preparation & Machine Cutting", "grup": "Hull Construction"},
+    {"id": "steelwork_process", "nama": "Steelwork Process", "grup": "Hull Construction"},
+    {"id": "keel_laying", "nama": "Keel Laying", "grup": "Hull Construction"},
+    {"id": "conformity_with", "nama": "Conformity With Standards", "grup": "Standards"},
+    {"id": "conformity_for", "nama": "Conformity For Standards", "grup": "Standards"},
+    {"id": "remedial_work", "nama": "Remedial Work & Alteration", "grup": "Standards"},
+    {"id": "welding_qualification", "nama": "Welding Qualification", "grup": "Welding"},
+    {"id": "welding_consumables", "nama": "Welding Consumables", "grup": "Welding"},
+    {"id": "welding_environment", "nama": "Welding Environment", "grup": "Welding"},
+    {"id": "welding_equipment", "nama": "Welding Equipment", "grup": "Welding"},
+    {"id": "welding_surfaces", "nama": "Welding Surfaces", "grup": "Welding"},
+    {"id": "welding_mech", "nama": "Welding Mechanical Test", "grup": "Welding"},
+    {"id": "structural_testing", "nama": "Structural Testing", "grup": "Testing"},
+    {"id": "tightness_testing", "nama": "Tightness Testing", "grup": "Testing"},
+    {"id": "inclining_experiment", "nama": "Inclining Experiment", "grup": "Testing"},
+    {"id": "insulation", "nama": "Insulation", "grup": "Outfitting"},
+    {"id": "hatch_covers", "nama": "Hatch Covers", "grup": "Outfitting"},
+    {"id": "safety_construction", "nama": "Safety Construction", "grup": "Safety"},
+    {"id": "cable_installation", "nama": "Cable Installation", "grup": "Electrical"},
+    {"id": "main_switchboard", "nama": "Main Switchboard", "grup": "Electrical"},
+    {"id": "emergency_switchboard", "nama": "Emergency Switchboard", "grup": "Electrical"},
+    {"id": "main_lighting", "nama": "Main Lighting", "grup": "Electrical"},
+    {"id": "emergency_lighting", "nama": "Emergency Lighting", "grup": "Electrical"},
+    {"id": "navigation_lighting", "nama": "Navigation Lighting", "grup": "Electrical"},
+    {"id": "doors_ramps", "nama": "Doors & Ramps Integral", "grup": "Outfitting"},
+    {"id": "door_window", "nama": "Door & Window", "grup": "Outfitting"},
+    {"id": "lifting_appliances", "nama": "Lifting Appliances", "grup": "Equipment"},
+    {"id": "livesaving", "nama": "Life Saving Foundation", "grup": "Safety"},
+    {"id": "rudders", "nama": "Rudders", "grup": "Hull Construction"},
+    {"id": "forgings", "nama": "Forgings", "grup": "Hull Construction"},
+    {"id": "freeboard", "nama": "Freeboard", "grup": "Measurement"},
+    {"id": "principal_dimensions", "nama": "Principal Dimensions", "grup": "Measurement"},
+    {"id": "shape", "nama": "Shape", "grup": "Measurement"},
+    {"id": "launching", "nama": "Launching", "grup": "Final"},
+    {"id": "anchor", "nama": "Anchor", "grup": "Equipment"},
+    {"id": "windlass", "nama": "Windlass", "grup": "Equipment"},
+    {"id": "mast_post_rigging", "nama": "Mast, Post & Rigging", "grup": "Equipment"},
 ]
 
-# Default system users
+# ==================== DEFAULT USERS ====================
 DEFAULT_USERS = [
-    ("ahmad.fauzi", "admin123", "admin", "IT"),
-    ("budi.santoso", "super123", "produksi", "Operations"),
-    ("siti.cahaya", "super123", "perencanaan", "Planning"),
-    ("eka.wijaya", "super123", "pembelian", "Procurement"),
-    ("rini.dewi", "super123", "qaqa", "Quality"),
-    ("doni.kusuma", "super123", "gudang", "Warehouse"),
-    ("yanti.santoso", "super123", "fasilitas", "Facilities"),
-    ("bambang.wijaya", "super123", "eksekutif", "Executive")
+    ("admin", "admin123", "Administrator Sistem", "admin", "IT"),
+    ("perencanaan", "super123", "Staff Perencanaan", "perencanaan", "Planning"),
+    ("produksi", "super123", "Staff Produksi", "produksi", "Operations"),
+    ("pembelian", "super123", "Staff Pembelian", "pembelian", "Procurement"),
+    ("qaqc", "super123", "Staff QA/QC", "qaqc", "Quality"),
+    ("gudang", "super123", "Staff Gudang", "gudang", "Warehouse"),
+    ("fasilitas", "super123", "Staff Fasilitas", "fasilitas", "Facilities"),
+    ("eksekutif", "super123", "Pimpinan Eksekutif", "eksekutif", "Executive"),
 ]

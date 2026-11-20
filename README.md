@@ -1,38 +1,44 @@
-# NAV-MIS: Sistem Integrasi Manajemen Galangan Kapal
+# SIBS: Shipyard Integrated Business System
+
+**Sistem Integrasi Bisnis & Operasional Galangan Kapal**  
+*Enterprise Clean White Edition — Powered by Supabase (PostgreSQL)*
+
+Berdasarkan riset ilmiah:
+1. Skripsi **Ratih Laratasari Pagayang** (*"Desain Integrasi Sistem Informasi Pembangunan Kapal Pada Sebuah Galangan Kapal Kecil Indonesia"*, Universitas Hasanuddin, 2025)
+2. Sistem Informasi Galangan Kecil Excel VBA Workbook (*230+ sheet*)
+
+---
 
 ## 📋 Daftar Isi
-- [Fitur Utama](#fitur-utama)
-- [Struktur Proyek](#struktur-proyek)
-- [Instalasi & Setup](#instalasi--setup)
-- [Cara Menggunakan](#cara-menggunakan)
-- [Akun Default](#akun-default)
-- [Modul & Departemen](#modul--departemen)
-- [Arsitektur & Teknologi](#arsitektur--teknologi)
-- [Testing & Validasi](#testing--validasi)
+- [Fitur Utama](#-fitur-utama)
+- [Struktur Proyek](#-struktur-proyek)
+- [Panduan Setup Supabase](#-panduan-setup-supabase)
+- [Instalasi & Menjalankan Aplikasi](#-instalasi--menjalankan-aplikasi)
+- [Akun Pengguna Bawaan](#-akun-pengguna-bawaan)
+- [7 Modul Departemen](#-7-modul-departemen)
+- [Data Riil & Seed Data](#-data-riil--seed-data)
 
 ---
 
 ## ✨ Fitur Utama
 
-### Dashboard Terpusat
-- 📊 **Key Metrics**: Visualisasi anggaran, realisasi biaya, dan sisa cadangan
-- 🏗️ **Status Proyek**: Informasi real-time tentang proyek aktif
-- 📈 **Multi-Departemen**: 7 departemen terintegrasi dalam satu platform
+- 🚢 **7 Departemen Terintegrasi Penuh**:
+  - **Perencanaan**: Dimensi utama kapal (LOA, LBP, B, H, T, GT, Vs, Cb, Cm, Cw, Cp), blok lambung (HS-04, HS-06), PWBS level 1-4, dan Drawing Register.
+  - **Produksi Lapangan**: Jadwal perakitan 7 tahapan riil, update progres fisik per sub-pekerjaan, log fabrikasi (cutting & welding per frame), dan formulir requisition material ke gudang.
+  - **Pembelian & Logistik**: Database supplier galangan, penerbitan Purchase Order (PO), approval status pesanan (draft -> submitted -> approved -> delivered).
+  - **Quality Control (QA/QC)**: 39 standar uji klasifikasi BKI (NDT, visual, tightness, hydrostatic), status persetujuan, dan tracking defect/remedial work.
+  - **Material & Gudang**: Master stok material pelat & profil baja, consumable pengelasan, cat marine, peringatan stok menipis (low-stock alert), transaksi mutasi masuk/keluar, dan approval pengeluaran barang.
+  - **Manajemen Fasilitas**: Kesiapan alat berat (gantry crane, plasma cutting, drydock), jadwal & penanganan maintenance, serta pencatatan utilisasi biaya harian.
+  - **Manajemen Eksekutif & BAP**: Dashboard lintas departemen, Kurva S rencana vs realisasi, analisis biaya proyek, dan generator Berita Acara Pemeriksaan (BAP) siap cetak langsung dari browser (`Ctrl + P`).
 
-### Manajemen Data
-- 👥 **User Management**: Kelola pengguna, role, dan departemen
-- 📊 **Data Management**: Edit dan monitoring semua parameter proyek
-- 🔄 **Backup & Restore**: Backup database (coming soon)
+- 🔒 **Keamanan & Standar Enterprise**:
+  - Hashing kata sandi berbasis standar industri **PBKDF2-SHA256** dengan dynamic salt.
+  - Throttling percobaan login untuk mencegah brute-force.
+  - Pencatatan jejak audit (Audit Trail) otomatis untuk setiap aksi login, mutasi, dan perubahan data.
+  - Role-based access control (RBAC) dengan pemisahan wewenang tiap departemen.
 
-### Laporan & Analisis
-- 💰 **Analisis Keuangan**: Report budget utilization
-- 📦 **Analisis Inventori**: Status warehouse dan stok material
-- 📋 **Audit Log**: Track semua aktivitas pengguna dengan timestamp
-
-### Pengaturan Sistem
-- 🔧 **Konfigurasi Aplikasi**: Settings umum dan debug mode
-- 🔐 **Keamanan**: Konfigurasi password policy dan session management
-- ℹ️ **About System**: Informasi versi dan lisensi
+- 🗄️ **Database Cloud Supabase (PostgreSQL)**:
+  - 16+ tabel relasional ternormalisasi dengan foreign keys dan indexes performa tinggi.
 
 ---
 
@@ -40,332 +46,116 @@
 
 ```
 SIBS/
-├── app.py                      # Main application entry point
-├── config.py                   # Configuration management (centralized)
-├── database.py                 # Database operations & queries
-├── auth.py                     # Authentication & authorization
-├── utils.py                    # UI utilities & styling
-├── requirements.txt            # Python dependencies
-├── .env                        # Environment variables (local)
-├── .env.example                # Environment template
-├── database_galangan.db        # SQLite database (auto-created)
-├── asset/                      # Images & assets
-│   └── bg.jpg                  # Background images
-└── README.md                   # Documentation
-```
-
-## 🎯 Cara Menggunakan
-
-### Login
-1. Buka browser → `http://localhost:8501`
-2. Gunakan salah satu akun default (lihat [Akun Default](#akun-default))
-3. Klik "Login"
-
-### Dashboard
-- **Metrics Cards**: Lihat anggaran, biaya, dan sisa dana proyek
-- **Department Tabs**: Akses 7 departemen berbeda
-- **Real-time Updates**: Semua perubahan langsung tersimpan
-
-### Departemen & Fitur
-
-#### 1. 📐 Desain & Perencanaan
-- Update Master Schedule
-- Update PWBS (Pembagian Blok Struktur)
-
-#### 2. ⚙️ Produksi Lapangan
-- Monitoring progres perakitan (0-100%)
-- Input biaya operasional lapangan
-- Validasi laporan produksi
-
-#### 3. 📦 Pembelian & Logistik
-- Manage vendor/supplier
-- Input volume pengadaan material
-- Set target kedatangan barang
-
-#### 4. ✔️ QA / QC
-- Update status inspeksi mutu
-- Validasi sertifikasi material
-- Catatan inspeksi detail
-
-#### 5. 🏭 Gudang Material
-- Monitor stok pelat baja
-- Mutasi material masuk/keluar
-- Real-time inventory tracking
-
-#### 6. 🔧 Manajemen Fasilitas
-- Status kelayakan infrastruktur
-- Log pemeliharaan crane
-- Update status operasional
-
-#### 7. 📈 Eksekutif Pemantau
-- Konsolidasi semua parameter
-- Tabel data lengkap
-- Budget utilization metrics
-
----
-
-## 👤 Akun Default
-
-| Username | Password | Role | Departemen |
-|----------|----------|------|-----------|
-| ahmad.fauzi | admin123 | admin | IT |
-| budi.santoso | super123 | produksi | Operations |
-| siti.cahaya | super123 | perencanaan | Planning |
-| eka.wijaya | super123 | pembelian | Procurement |
-| rini.dewi | super123 | qaqa | Quality |
-| doni.kusuma | super123 | gudang | Warehouse |
-| yanti.santoso | super123 | fasilitas | Facilities |
-| bambang.wijaya | super123 | eksekutif | Executive |
-
-**Password default**: `admin123` atau `super123`
-
----
-
-## 🏢 Modul & Departemen
-
-### Modul Inti
-
-#### `config.py` - Konfigurasi Terpusat
-```python
-# Fitur:
-- DatabaseConfig: Pengaturan database
-- SecurityConfig: Keamanan sistem
-- AppConfig: Konfigurasi aplikasi
-- UIConfig: Theme dan styling
-- DEPARTMENTS: Role-based access control
-- DEFAULT_PROJECT_DATA: Data awal
-- DEFAULT_USERS: Pengguna bawaan
-```
-
-#### `database.py` - Manajemen Database
-```python
-# Class DatabaseManager:
-- initialize_database(): Setup tabel & data default
-- get_all_project_data(): Ambil semua data proyek
-- update_single_data(): Update parameter tertentu
-- get_user(): Verifikasi login pengguna
-- get_audit_logs(): Ambil log aktivitas
-- get_budget_status(): Status keuangan
-- get_inventory_status(): Status gudang
-```
-
-#### `auth.py` - Autentikasi & Validasi
-```python
-# Class AuthValidator:
-- validate_username(): Validasi format username
-- validate_password(): Cek strength password
-- validate_currency_input(): Parsing input mata uang
-- validate_percentage(): Validasi persentase
-
-# Class AuthenticationManager:
-- authenticate_user(): Login & verifikasi
-- check_permission(): Cek hak akses
-- can_edit_data(): Check edit permission
-```
-
-#### `utils.py` - UI & Helper Functions
-```python
-# Fitur:
-- apply_custom_styling(): CSS custom theme
-- render_sidebar_header(): Header sidebar
-- render_login_header(): Header login page
-- render_dashboard_header(): Header dashboard
-- format_currency(): Formatting Rp currency
-- show_success_toast(), show_error_toast(), dll
+├── app.py                      # Router utama aplikasi Streamlit
+├── config.py                   # Konfigurasi Supabase, App, dan Security
+├── database.py                 # Wrapper CRUD client Supabase
+├── auth.py                     # Otentikasi & hashing PBKDF2
+├── utils.py                    # CSS korporat putih, format helper, KPI card, print styling
+├── schema.sql                  # Skrip DDL PostgreSQL untuk Supabase
+├── seed_data.py                # Skrip injeksi data awal riil dari Excel/Skripsi
+├── requirements.txt            # Dependensi Python
+├── .env.example                # Template kredensial Supabase
+├── .env                        # Kredensial aktif Supabase (jangan dicommit)
+├── departments/                # Paket modul 7 departemen
+│   ├── __init__.py
+│   ├── perencanaan.py          # Desain & PWBS
+│   ├── produksi.py             # Jadwal & Fabrikasi Lapangan
+│   ├── pembelian.py            # Supplier & Purchase Order
+│   ├── qaqc.py                 # 39 Kategori Inspeksi BKI
+│   ├── gudang.py               # Stok, Mutasi & Approval Requisition
+│   ├── fasilitas.py            # Alat Berat, Maintenance & Utilisasi
+│   └── eksekutif.py            # Kurva S, Biaya & Cetak Lembar BAP
+└── asset/                      # File aset gambar
 ```
 
 ---
 
-## 🛠️ Arsitektur & Teknologi
+## 🚀 Panduan Setup Supabase
 
-### Frontend
-- **Streamlit 1.28+**: Modern web UI framework
-- **Custom CSS**: Dark theme dengan design system NaviStock
-- **Responsive Design**: Mobile-friendly interface
+Aplikasi SIBS menggunakan database PostgreSQL berbasis cloud di **Supabase**. Ikuti langkah-langkah mudah berikut untuk mengonfigurasikannya:
 
-### Backend
-- **Python 3.9+**: Server-side logic
-- **SQLite3**: Lightweight database
-- **Logging**: Event tracking & audit trail
+### 1. Buat Proyek Baru di Supabase
+1. Kunjungi [supabase.com](https://supabase.com) dan masuk (atau daftar akun gratis).
+2. Klik tombol **"New project"**.
+3. Masukkan nama proyek (misal: `SIBS-Galangan`) dan buat **Database Password** yang kuat.
+4. Pilih region terdekat (misal: `Singapore (ap-southeast-1)`).
+5. Tunggu 1-2 menit hingga proyek selesai disiapkan.
 
-### Security
-- **Input Validation**: Mencegah SQL injection & XSS
-- **Authentication**: Username/password verification
-- **Authorization**: Role-based access control (RBAC)
-- **Audit Trail**: Complete activity logging
+### 2. Jalankan Skema Database (`schema.sql`)
+1. Di dashboard Supabase Anda, buka menu **SQL Editor** pada sidebar kiri (ikon `>_`).
+2. Buka file `schema.sql` yang ada di proyek SIBS, salin (copy) seluruh kodenya.
+3. Tempelkan (paste) ke SQL Editor di Supabase.
+4. Klik tombol **"Run"** (atau tekan `Ctrl + Enter`).
+5. Seluruh tabel relasional, enum, dan indeks akan otomatis terbuat.
 
-### Modularity
-- **Separation of Concerns**: Config, DB, Auth terpisah
-- **Reusable Components**: UI utilities & helper functions
-- **Type Hints**: Better code documentation
-- **Error Handling**: Comprehensive error management
+### 3. Salin API URL & Anon Key ke File `.env`
+1. Di dashboard Supabase, buka menu **Project Settings** (ikon gerigi di kiri bawah) → **API**.
+2. Salin nilai **Project URL** (contoh: `https://xyzcompany.supabase.co`).
+3. Salin nilai **Project API Keys** bagian `anon` / `public`.
+4. Buka file `.env` di folder proyek SIBS, lalu isi nilainya:
+   ```env
+   SUPABASE_URL=https://xyzcompany.supabase.co
+   SUPABASE_KEY=eyJh......
+   ```
 
 ---
 
-## ✅ Testing & Validasi
+## 💻 Instalasi & Menjalankan Aplikasi
 
-### Unit Test Database
+### 1. Aktifkan Virtual Environment & Pasang Dependensi
+Pastikan virtual environment Python aktif, lalu jalankan:
 ```bash
-python -c "
-from database import db_manager
-db_manager.initialize_database()
-data = db_manager.get_all_project_data()
-print(f'✅ Data loaded: {len(data)} parameters')
-"
+pip install -r requirements.txt
 ```
 
-### Unit Test Authentication
+### 2. Isi Data Awal Riil Galangan Kapal (Seed Data)
+Setelah Supabase siap dan terhubung di `.env`, jalankan skrip berikut satu kali untuk mengisi data kapal KM. Nusantara, blok HS-06, jadwal 7 tahap, material, alat berat, dan akun pengguna:
 ```bash
-python -c "
-from auth import auth_manager
-success, user, msg = auth_manager.authenticate_user('ahmad.fauzi', 'admin123')
-print(f'✅ Auth: {msg}' if success else f'❌ Auth failed: {msg}')
-"
+python seed_data.py
 ```
 
-### Unit Test Modules
-```bash
-python -c "
-from config import app_config
-from database import db_manager
-from auth import auth_manager
-from utils import apply_custom_styling
-print('✅ All modules imported successfully')
-"
-```
-
-### Integration Test - Full App
+### 3. Jalankan Aplikasi Web
 ```bash
 streamlit run app.py
-# Test semua fitur:
-# 1. Login dengan berbagai role
-# 2. Update data setiap departemen
-# 3. Monitoring metrics realtime
-# 4. Check audit log
-# 5. Logout & re-login
 ```
-
-### Testing Checklist
-
-#### ✅ Authentication
-- [x] Login dengan akun default
-- [x] Login gagal dengan password salah
-- [x] Login validation (empty fields)
-- [x] Logout functionality
-- [x] Session management
-
-#### ✅ Dashboard
-- [x] Metrics card updates
-- [x] Project status display
-- [x] 7 department tabs accessible
-
-#### ✅ Department Features
-- [x] Design & Planning: Update schedule/PWBS
-- [x] Production: Progress slider & cost input
-- [x] Procurement: Vendor & volume input
-- [x] QA/QC: Status update & notes
-- [x] Warehouse: Inventory mutation
-- [x] Facilities: Equipment status
-- [x] Executive: Full data consolidation
-
-#### ✅ Data Management
-- [x] View users list
-- [x] View project data
-- [x] Edit parameters
-- [x] Audit log tracking
-
-#### ✅ Reports
-- [x] Financial analysis
-- [x] Inventory analysis
-- [x] Audit logs view
-
-#### ✅ System Settings
-- [x] App configuration display
-- [x] Security settings view
-- [x] About system info
-
-#### ✅ UI/UX
-- [x] Dark theme consistency
-- [x] Responsive layout
-- [x] Button interactions
-- [x] Form validation
-- [x] Success/error notifications
+Aplikasi akan terbuka otomatis di peramban Anda pada alamat: `http://localhost:8501`.
 
 ---
 
-## 🔧 Konfigurasi Advanced
+## 👥 Akun Pengguna Bawaan
 
-### Environment Variables (.env)
-
-```env
-# Database
-DB_FILE=database_galangan.db
-BACKUP_ENABLED=true
-BACKUP_INTERVAL=3600
-
-# Security
-PASSWORD_MIN_LENGTH=6
-MAX_LOGIN_ATTEMPTS=5
-SESSION_TIMEOUT=3600
-ENABLE_LOGGING=true
-
-# Application
-DEBUG=false
-
-# Streamlit
-STREAMLIT_SERVER_PORT=8501
-STREAMLIT_SERVER_ADDRESS=localhost
-STREAMLIT_LOGGER_LEVEL=info
-```
-
-### Custom Styling
-
-Edit `config.py` → `UIConfig` untuk mengubah:
-- PRIMARY_COLOR: Warna utama tombol
-- DARK_BG: Warna background
-- TEXT_PRIMARY/SECONDARY: Warna teks
+| Role | Username | Password | Wewenang Akses |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | `admin123` | Akses penuh ke seluruh departemen, manajemen user, dan log audit |
+| **Perencanaan** | `perencanaan` | `super123` | Desain kapal, data blok lambung, dan hierarki PWBS |
+| **Produksi** | `produksi` | `super123` | Jadwal perakitan, data pemotongan/las, dan permintaan material |
+| **Pembelian** | `pembelian` | `super123` | Rekanan supplier dan penerbitan Purchase Order |
+| **QA / QC** | `qaqc` | `super123` | 39 standar inspeksi mutu BKI dan approval pengujian |
+| **Gudang** | `gudang` | `super123` | Stok inventaris, transaksi mutasi, dan pengeluaran material |
+| **Fasilitas** | `fasilitas` | `super123` | Monitoring alat berat, jadwal maintenance, dan utilisasi |
+| **Eksekutif** | `eksekutif` | `super123` | Dashboard pimpinan, Kurva S, analisis biaya, dan cetak BAP |
 
 ---
 
-## 📝 Maintenance & Support
+## 🚢 Data Riil Kapal & Proyek (Berdasarkan Sumber Riset)
 
-### Database Backup
-```bash
-# Manual backup
-cp database_galangan.db database_galangan.db.backup
-```
-
-### Clear Data
-```bash
-# Hapus database untuk reset
-Remove-Item database_galangan.db
-# Aplikasi akan recreate dengan data default
-```
-
-### Enable Debug Mode
-Edit `.env`:
-```env
-DEBUG=true
-```
-
-### View Logs
-Logs disimpan di console output Streamlit.
-
----
-
-## 🎉 Kesimpulan
-
-Sistem NAV-MIS v2.0.0 telah diupgrade dengan:
-- ✅ **Modern Architecture**: Modular, scalable, maintainable
-- ✅ **Security First**: Validation, auth, RBAC, audit trail
-- ✅ **User Friendly**: Intuitive UI dengan dark theme premium
-- ✅ **Production Ready**: Error handling, logging, documentation
-- ✅ **Fully Functional**: Semua fitur terintegrasi & tested
-
-**Siap untuk production deployment! 🚀**
-
----
-
-*Last Updated: May 2026*  
-*By: GitHub Copilot*  
-*For: PT Krakatau Steel Shipyard Division*
+- **Identitas Proyek Kapal**: KM. NUSANTARA (`NB-002`) / KM. LAKAAN (`NB-001`)
+- **Tipe Kapal**: Ferry Ro-Ro (Penumpang & Kendaraan)
+- **Ukuran**: 750 Gross Tonnage (GT)
+- **Dimensi Utama**:
+  - Length Overall (LOA): 70.00 m
+  - Length on Waterline (LWL): 68.00 m
+  - Length Between Perpendiculars (LBP): 65.00 m
+  - Breadth / Lebar (B): 14.00 m
+  - Depth / Tinggi (H): 4.80 m
+  - Draught / Sarat Air (T): 3.20 m
+  - Service Speed (Vs): 15.00 knot
+  - Koefisien Bentuk: Cb = 0.70, Cm = 0.80, Cw = 0.80, Cp = 0.70
+- **Tahapan Perakitan Blok HS-06 (Jan - Mar 2025)**:
+  1. Pembangunan Panel Deck (Durasi: 12 hari, Bobot: 15%)
+  2. Pembangunan Panel Bottom (Durasi: 18 hari, Bobot: 20%)
+  3. Pembangunan Panel Sisi SB (Durasi: 21 hari, Bobot: 15%)
+  4. Pembangunan Panel Sisi PS (Durasi: 21 hari, Bobot: 15%)
+  5. Assembly Bottom + Sisi (Durasi: 15 hari, Bobot: 20%)
+  6. Assembly Deck Panel (Durasi: 12 hari, Bobot: 10%)
+  7. Finishing, Blasting Sa 2.5 & Painting (Durasi: 13 hari, Bobot: 5%)

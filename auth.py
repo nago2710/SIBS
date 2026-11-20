@@ -1,152 +1,120 @@
 """
-Authentication and validation module for NAV-MIS System
-Handles user authentication, input validation, and security checks
+SIBS: Shipyard Integrated Business System
+Authentication Module — Password hashing, login, permissions
 """
 
-import re
+import hashlib
+import secrets
 import logging
 from typing import Dict, Tuple, Optional
-from database import db_manager
 from config import security_config, DEPARTMENTS
 
 logger = logging.getLogger(__name__)
 
 
-class AuthValidator:
-    """Authentication and input validation class"""
+# ==================== PASSWORD HASHING (stdlib PBKDF2) ====================
 
-    @staticmethod
-    def validate_username(username: str) -> Tuple[bool, str]:
-        """Validate username format and length"""
-        if not username or len(username) < 3:
-            return False, "Username minimal 3 karakter"
-        if len(username) > 50:
-            return False, "Username maksimal 50 karakter"
-        if not re.match(r"^[a-zA-Z0-9._-]+$", username):
-            return False, "Username hanya boleh berisi alfanumerik, titik, underscore, dan dash"
-        return True, ""
+def hash_password(password: str) -> str:
+    """Hash a password using PBKDF2-SHA256 with random salt."""
+    salt = secrets.token_hex(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100_000)
+    return f"{salt}:{dk.hex()}"
 
-    @staticmethod
-    def validate_password(password: str) -> Tuple[bool, str]:
-        """Validate password strength"""
-        if not password or len(password) < security_config.PASSWORD_MIN_LENGTH:
-            return False, f"Password minimal {security_config.PASSWORD_MIN_LENGTH} karakter"
-        if len(password) > 100:
-            return False, "Password maksimal 100 karakter"
-        return True, ""
 
-    @staticmethod
-    def validate_currency_input(value: str) -> Tuple[bool, float]:
-        """Validate and convert currency input"""
-        try:
-            # Remove common currency formatting
-            cleaned = value.replace("Rp", "").replace(".", "").replace(",", "").strip()
-            num_value = float(cleaned)
-            if num_value < 0:
-                return False, 0
-            return True, num_value
-        except ValueError:
-            return False, 0
+def verify_password(password: str, stored_hash: str) -> bool:
+    """Verify a password against a stored PBKDF2 hash."""
+    try:
+        salt, expected = stored_hash.split(":", 1)
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100_000)
+        return dk.hex() == expected
+    except Exception:
+        return False
 
-    @staticmethod
-    def validate_percentage(value: float) -> Tuple[bool, str]:
-        """Validate percentage value"""
-        if not 0 <= value <= 100:
-            return False, "Persentase harus antara 0-100"
-        return True, ""
 
-    @staticmethod
-    def validate_email(email: str) -> Tuple[bool, str]:
-        """Validate email format"""
-        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        if re.match(pattern, email):
-            return True, ""
-        return False, "Format email tidak valid"
-
-    @staticmethod
-    def validate_date(date_str: str) -> Tuple[bool, str]:
-        """Validate date format DD-MM-YYYY"""
-        pattern = r"^\d{2}-\d{2}-\d{4}$"
-        if re.match(pattern, date_str):
-            return True, ""
-        return False, "Format tanggal harus DD-MM-YYYY"
-
+# ==================== AUTHENTICATION MANAGER ====================
 
 class AuthenticationManager:
-    """Authentication management class"""
+    """Handles login, permission checks, and user session management."""
 
     def __init__(self):
-        """Initialize authentication manager"""
-        self.login_attempts = {}
-        self.validator = AuthValidator()
+        self.login_attempts: Dict[str, int] = {}
 
-    def authenticate_user(self, username: str, password: str) -> Tuple[bool, Optional[Dict], str]:
+    def authenticate_user(self, username: str, password: str) -> Tuple[bool, Optional[dict], str]:
         """
-        Authenticate user credentials
-        Returns: (success, user_info, message)
+        Authenticate against Supabase users table.
+        Returns (success, user_info_dict, message).
         """
-        # Validate inputs
-        is_valid_user, user_msg = self.validator.validate_username(username)
-        if not is_valid_user:
-            return False, None, user_msg
+        from database import db_manager
 
-        is_valid_pass, pass_msg = self.validator.validate_password(password)
-        if not is_valid_pass:
-            return False, None, pass_msg
+        if not db_manager.is_connected:
+            return False, None, "Database belum terhubung. Periksa konfigurasi Supabase."
+
+        # Input validation
+        if not username or len(username) < 2:
+            return False, None, "Username minimal 2 karakter."
+        if not password or len(password) < security_config.PASSWORD_MIN_LENGTH:
+            return False, None, f"Password minimal {security_config.PASSWORD_MIN_LENGTH} karakter."
 
         # Check login attempts
-        if username in self.login_attempts:
-            if self.login_attempts[username] >= security_config.MAX_LOGIN_ATTEMPTS:
-                return False, None, f"Terlalu banyak percobaan login. Coba lagi nanti."
+        attempts = self.login_attempts.get(username, 0)
+        if attempts >= security_config.MAX_LOGIN_ATTEMPTS:
+            return False, None, "Terlalu banyak percobaan login. Coba lagi nanti."
 
-        # Authenticate against database
-        user_data = db_manager.get_user(username, password)
+        # Fetch user from DB
+        user = db_manager.get_user_by_username(username)
+        if not user:
+            self.login_attempts[username] = attempts + 1
+            return False, None, "Username atau password salah."
 
-        if user_data:
-            # Reset login attempts
-            self.login_attempts[username] = 0
-            user_info = {
-                "username": user_data['username'],
-                "role": user_data['role'],
-                "department": user_data['departemen'],
-                "department_display": DEPARTMENTS.get(user_data['role'], {}).get('display', user_data['role']),
-                "permissions": DEPARTMENTS.get(user_data['role'], {}).get('permissions', [])
-            }
-            logger.info(f"User {username} authenticated successfully")
-            return True, user_info, "Login berhasil"
-        else:
-            # Increment login attempts
-            self.login_attempts[username] = self.login_attempts.get(username, 0) + 1
-            logger.warning(f"Failed login attempt for user {username}")
-            return False, None, "Username atau password salah"
+        # Verify password
+        if not verify_password(password, user.get("password_hash", "")):
+            self.login_attempts[username] = attempts + 1
+            return False, None, "Username atau password salah."
 
-    def check_permission(self, user_info: Dict, required_permission: str) -> bool:
-        """Check if user has required permission"""
+        # Success — reset attempts
+        self.login_attempts[username] = 0
+        role = user.get("role", "viewer")
+        dept_info = DEPARTMENTS.get(role, {})
+
+        user_info = {
+            "username": user["username"],
+            "nama_lengkap": user.get("nama_lengkap", user["username"]),
+            "role": role,
+            "departemen": user.get("departemen", ""),
+            "department_display": dept_info.get("display", role),
+            "permissions": dept_info.get("permissions", ["view_data"]),
+        }
+
+        # Audit log
+        db_manager.log_action(username, "LOGIN", keterangan="Login berhasil")
+        logger.info(f"User '{username}' berhasil login (role={role})")
+        return True, user_info, "Login berhasil."
+
+    # ------------------------------------------------------------------
+    #  PERMISSION HELPERS
+    # ------------------------------------------------------------------
+    @staticmethod
+    def has_permission(user_info: dict, required: str) -> bool:
+        """Check if user has a specific permission."""
         if not user_info:
             return False
+        perms = user_info.get("permissions", [])
+        return "full_access" in perms or required in perms
 
-        permissions = user_info.get("permissions", [])
-        if "full_access" in permissions:
+    @staticmethod
+    def can_access_department(user_info: dict, dept_key: str) -> bool:
+        """Check if user can access a department tab."""
+        if not user_info:
+            return False
+        role = user_info.get("role", "")
+        if role == "admin":
             return True
+        return role == dept_key
 
-        return required_permission in permissions
-
-    def can_edit_data(self, user_info: Dict) -> bool:
-        """Check if user can edit project data"""
-        return self.check_permission(user_info, "full_access") or self.check_permission(user_info, "edit_design")
-
-    def can_update_progress(self, user_info: Dict) -> bool:
-        """Check if user can update production progress"""
-        return self.check_permission(user_info, "full_access") or self.check_permission(user_info, "update_progress")
-
-    def can_manage_inventory(self, user_info: Dict) -> bool:
-        """Check if user can manage inventory"""
-        return self.check_permission(user_info, "full_access") or self.check_permission(user_info, "manage_inventory")
-
-    def can_validate_quality(self, user_info: Dict) -> bool:
-        """Check if user can validate quality"""
-        return self.check_permission(user_info, "full_access") or self.check_permission(user_info, "validate_quality")
+    @staticmethod
+    def is_admin(user_info: dict) -> bool:
+        return user_info.get("role") == "admin" if user_info else False
 
 
-# Global authentication manager instance
+# Global instance
 auth_manager = AuthenticationManager()

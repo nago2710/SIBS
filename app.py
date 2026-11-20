@@ -1,9 +1,12 @@
 """
-NAV-MIS: Sistem Integrasi Manajemen Galangan Kapal (Shipyard Management System)
-Modern and fully structured version with modular architecture
+SIBS: Shipyard Integrated Business System
+Sistem Integrasi Bisnis & Operasional Galangan Kapal
+Enterprise Multi-Theme Edition (Light & Dark Mode) — Powered by Supabase
 
-Version: 2.0.0
-Last Updated: 2026
+Version: 4.2.0
+Berdasarkan:
+1. Skripsi Ratih Laratasari Pagayang (Unhas, 2025)
+2. Sistem Informasi Galangan Kecil.xlsm (230+ sheet)
 """
 
 import streamlit as st
@@ -11,726 +14,620 @@ import pandas as pd
 import logging
 from datetime import datetime
 
-# Import modules
-from config import app_config, ui_config, DEPARTMENTS
+# Import core configurations & utilities
+from config import app_config, DEPARTMENTS, supabase_config, DEFAULT_USERS
 from database import db_manager
-from auth import auth_manager
+from auth import auth_manager, hash_password
 from utils import (
-    apply_custom_styling, render_sidebar_header, render_user_info,
-    render_login_header, render_dashboard_header, render_premium_card,
-    show_success_toast, show_error_toast, show_warning_toast, show_info_toast,
-    format_currency, create_metric_card
+    apply_sibs_theme, render_kpi, render_page_header,
+    status_pill, format_currency, format_percentage, format_date,
+    show_success, show_error, show_warning, show_info,
+    get_asset_base64
+)
+
+# Import 7 department modules
+from departments import (
+    perencanaan,
+    produksi,
+    pembelian,
+    qaqc,
+    gudang,
+    fasilitas,
+    eksekutif
 )
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # ==================== PAGE CONFIGURATION ====================
-
 st.set_page_config(
-    page_title=app_config.APP_TITLE,
-    page_icon=app_config.APP_ICON,
-    layout=app_config.LAYOUT,
+    page_title="SIBS — Sistem Integrasi Bisnis Galangan Kapal",
+    page_icon=None,
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Apply custom styling
-apply_custom_styling()
-
-# Initialize database
-db_manager.initialize_database()
-
-# ==================== SESSION STATE MANAGEMENT ====================
-
+# ==================== SESSION STATE INITIALIZATION ====================
 def init_session_state():
-    """Initialize all session state variables"""
-    if 'logged_in' not in st.session_state:
+    if "theme" not in st.session_state:
+        st.session_state.theme = "light"
+    if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
-    if 'user_info' not in st.session_state:
+    if "show_login" not in st.session_state:
+        st.session_state.show_login = False
+    if "user_info" not in st.session_state:
         st.session_state.user_info = {}
-    if 'page' not in st.session_state:
-        st.session_state.page = "Dashboard"
-    if 'last_action' not in st.session_state:
-        st.session_state.last_action = None
-
+    if "nav_menu" not in st.session_state:
+        st.session_state.nav_menu = "Dashboard Eksekutif"
+    if "active_project" not in st.session_state:
+        st.session_state.active_project = "NB-002"
+    if "last_sync" not in st.session_state:
+        st.session_state.last_sync = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
 init_session_state()
 
-# ==================== AUTHENTICATION PAGE ====================
+# Apply selected theme (Light or Dark)
+apply_sibs_theme(st.session_state.theme)
 
-def render_login_page():
-    """Render login/authentication page"""
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+
+# ==================== LANDING PAGE ====================
+def render_landing_page():
+    """
+    Halaman muka resmi SIBS dengan tata letak corporate maritim modern,
+    merujuk pada referensi website galangan profesional (PT. SCM-INDONESIA).
+    Dilengkapi floating navbar, gambar hero galangan kapal sunset, switch mode di kanan atas hero,
+    dan tombol dinamis responsif berstandar industri.
+    """
+    is_dark = st.session_state.theme == "dark"
+
+    # 1. Top Navbar Header (Mirroring Reference PT. SCM-INDONESIA)
+    brand_sub_color = "#94A3B8" if is_dark else "#64748B"
+    brand_title_color = "#FFFFFF" if is_dark else "#0F172A"
     
-    with col2:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        
-        # Login header
-        render_login_header()
-        
-        # Login form container
-        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        
-        with st.form("login_form"):
-            st.markdown("### Autentikasi Akses Sistem")
-            
-            username = st.text_input(
-                "📧 Username",
-                placeholder="Masukkan username Anda",
-                help="Default: ahmad.fauzi"
-            )
-            
-            password = st.text_input(
-                "🔐 Password",
-                type="password",
-                placeholder="Masukkan password Anda",
-                help="Default: admin123"
-            )
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            submitted = st.form_submit_button("🔓 Login", use_container_width=True)
-            
-            if submitted:
-                if not username or not password:
-                    show_error_toast("Username dan password tidak boleh kosong")
-                else:
-                    success, user_info, message = auth_manager.authenticate_user(username, password)
-                    
-                    if success:
-                        st.session_state.logged_in = True
-                        st.session_state.user_info = user_info
-                        show_success_toast(f"Selamat datang {username}!")
-                        logger.info(f"User {username} logged in successfully")
-                        st.rerun()
-                    else:
-                        show_error_toast(message)
-                        logger.warning(f"Login failed for user {username}")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Footer info
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown(
-            f"""
-            <div style='text-align: center; color: #64748b; font-size: 12px;'>
-                <p>NAV-MIS v{app_config.VERSION} | Galangan Kapal Terintegrasi</p>
-                <p>© 2026 PT Krakatau Steel Shipyard Division</p>
+    st.markdown(f"""
+        <div id="beranda"></div>
+        <div class="sibs-navbar-container">
+            <div class="sibs-brand-title">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5" stroke="#38BDF8" stroke-width="2.2" fill="rgba(56, 189, 248, 0.18)"/>
+                    <line x1="12" y1="2" x2="12" y2="22" stroke="#38BDF8" stroke-width="1.8"/>
+                    <line x1="12" y1="12" x2="22" y2="8.5" stroke="#38BDF8" stroke-width="1.8"/>
+                    <line x1="12" y1="12" x2="2" y2="8.5" stroke="#38BDF8" stroke-width="1.8"/>
+                </svg>
+                <span style="color: {brand_title_color}; font-weight: 800; font-size: 19px; letter-spacing: 0.5px;">SIBS INDONESIA</span>
+                <span class="sibs-brand-sub" style="color: {brand_sub_color};">SHIPYARD INTEGRATED BUSINESS SYSTEM</span>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+            <ul class="sibs-nav-links">
+                <li><a href="#beranda" class="sibs-nav-link active">Beranda</a></li>
+                <li><a href="#kpi-section" class="sibs-nav-link">Ringkasan KPI</a></li>
+                <li><a href="#modul-departemen" class="sibs-nav-link">7 Departemen</a></li>
+                <li><a href="#standar-bki" class="sibs-nav-link">Standar BKI</a></li>
+                <li><a href="#kapal-riset" class="sibs-nav-link">Spesifikasi Ro-Ro</a></li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)
 
-
-# ==================== SIDEBAR NAVIGATION ====================
-
-def render_sidebar():
-    """Render sidebar with navigation and user info"""
-    with st.sidebar:
-        # Sidebar header
-        render_sidebar_header("NAV-MIS", f"v{app_config.VERSION}")
-        
-        # User info
-        user_info = st.session_state.user_info
-        render_user_info(
-            user_info['username'],
-            user_info['department_display'],
-            user_info['department']
-        )
-        
-        st.markdown("---")
-        
-        # Navigation menu
-        st.markdown(
-            "<p style='color: #475569; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;'>📋 Menu Utama</p>",
-            unsafe_allow_html=True
-        )
-        
-        nav_page = st.radio(
-            "Navigasi",
-            ["Dashboard Terpusat", "Manajemen Data", "Laporan & Analisis", "Pengaturan Sistem"],
-            label_visibility="collapsed"
-        )
-        
-        st.markdown("---")
-        
-        # Logout button
-        if st.button("🚪 Keluar (Sign Out)", use_container_width=True, type="secondary"):
-            st.session_state.logged_in = False
-            st.session_state.user_info = {}
-            logger.info(f"User {user_info['username']} logged out")
-            st.rerun()
-        
-        st.markdown("<br><br><br>", unsafe_allow_html=True)
-        
-        # Footer info
-        st.markdown(
-            f"""
-            <div style='text-align: center; color: #64748b; font-size: 11px; border-top: 1px solid {ui_config.BORDER_COLOR}; padding-top: 12px;'>
-                <p style='margin: 0;'>Last Login: {datetime.now().strftime('%d-%m-%Y %H:%M')}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    
-    return nav_page
-    
-# ==================== DASHBOARD PAGE ====================
-
-def render_dashboard():
-    """Render main dashboard page"""
-    render_dashboard_header(
-        "📊 Dashboard Admin Sistem",
-        "Konsolidasi data operasional galangan, regulasi kelas lambung, dan penelusuran aset alat berat"
-    )
-    
-    # Get all project data
-    db = db_manager.get_all_project_data()
-    
-    if not db:
-        show_error_toast("Gagal memuat data dari database")
-        return
-    
-    # ==================== KEY METRICS ====================
-    anggaran = int(db.get("Anggaran Alokasi Proyek", 0))
-    terpakai = int(db.get("Biaya Konstruksi Terpakai", 0))
-    sisa_dana = anggaran - terpakai
-    
-    # Calculate metrics percentage
-    utilization_pct = (terpakai / anggaran * 100) if anggaran > 0 else 0
-    remaining_pct = ((sisa_dana / anggaran) * 100) if anggaran > 0 else 0
-    
-    # Display metrics
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown(
-            f"""
-            <div class="navistock-metric">
-                <div class="navistock-label">💰 Total Alokasi Finansial</div>
-                <div class="navistock-value">{format_currency(anggaran)}</div>
-                <div class="navistock-subtext">Rencana Anggaran Biaya (RAB)</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    
-    with col2:
-        st.markdown(
-            f"""
-            <div class="navistock-metric">
-                <div class="navistock-label">📊 Realisasi Dana Konstruksi</div>
-                <div class="navistock-value" style="color: #f87171;">{format_currency(terpakai)}</div>
-                <div class="navistock-subtext">Utilization: {utilization_pct:.1f}%</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    
-    with col3:
-        st.markdown(
-            f"""
-            <div class="navistock-metric">
-                <div class="navistock-label">✅ Sisa Cadangan Anggaran</div>
-                <div class="navistock-value" style="color: #4ade80;">{format_currency(sisa_dana)}</div>
-                <div class="navistock-subtext">Safety margin: {remaining_pct:.1f}%</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # ==================== PROJECT STATUS ====================
-    st.markdown(render_premium_card("🏗️ Status Proyek Aktif"), unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown(f"**Nama Proyek:** {db.get('Nama Proyek Aktif', 'N/A')}")
-        st.markdown(f"**Jadwal Master:** {db.get('Master Schedule', 'N/A')}")
-        st.markdown(f"**PWBS / Area Kerja:** {db.get('PWBS / Area Kerja', 'N/A')}")
-    
-    with col2:
-        st.markdown(f"**Target Delivery:** {db.get('Target Waktu Peluncuran (Delivery)', 'N/A')}")
-        st.markdown(f"**Vendor Utama:** {db.get('Vendor Utama Logistik', 'N/A')}")
-        st.markdown(f"**Status QA/QC:** {db.get('Status Inspeksi QA/QC', 'N/A')}")
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # ==================== SEVEN DEPARTMENT TABS ====================
-    st.markdown(render_premium_card("🏢 Stasiun Pengawasan Alur Informasi Departemen"), unsafe_allow_html=True)
-    
-    tabs = st.tabs([
-        "📐 Desain & Perencanaan",
-        "⚙️ Produksi Lapangan",
-        "📦 Pembelian & Logistik",
-        "✔️ QA / QC",
-        "🏭 Gudang Material",
-        "🔧 Manajemen Fasilitas",
-        "📈 Eksekutif Pemantau"
-    ])
-    
-    # ==================== TAB 1: PERENCANAAN ====================
-    with tabs[0]:
-        render_department_perencanaan(db)
-    
-    # ==================== TAB 2: PRODUKSI ====================
-    with tabs[1]:
-        render_department_produksi(db)
-    
-    # ==================== TAB 3: PEMBELIAN ====================
-    with tabs[2]:
-        render_department_pembelian(db)
-    
-    # ==================== TAB 4: QA/QC ====================
-    with tabs[3]:
-        render_department_qaqa(db)
-    
-    # ==================== TAB 5: GUDANG ====================
-    with tabs[4]:
-        render_department_gudang(db)
-    
-    # ==================== TAB 6: FASILITAS ====================
-    with tabs[5]:
-        render_department_fasilitas(db)
-    
-    # ==================== TAB 7: EKSEKUTIF ====================
-    with tabs[6]:
-        render_department_eksekutif(db)
-
-
-# ==================== DEPARTMENT MODULES ====================
-
-def render_department_perencanaan(db: dict):
-    """Planning & Design Department"""
-    st.markdown("### 📐 Departemen Perencanaan & Desain Produksi")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        new_schedule = st.text_input(
-            "Master Schedule Konstruksi Lambung",
-            value=db.get("Master Schedule", ""),
-            key="perencanaan_schedule"
-        )
-    
-    with col2:
-        new_pwbs = st.text_input(
-            "Pembagian Blok Struktur (PWBS)",
-            value=db.get("PWBS / Area Kerja", ""),
-            key="perencanaan_pwbs"
-        )
-    
-    if st.button("💾 Update Data Perencanaan", use_container_width=True, key="btn_update_perencanaan"):
-        success1 = db_manager.update_single_data("Master Schedule", new_schedule, st.session_state.user_info['username'])
-        success2 = db_manager.update_single_data("PWBS / Area Kerja", new_pwbs, st.session_state.user_info['username'])
-        
-        if success1 and success2:
-            show_success_toast("Data perencanaan berhasil diperbarui")
-            st.rerun()
-        else:
-            show_error_toast("Gagal memperbarui data perencanaan")
-
-
-def render_department_produksi(db: dict):
-    """Production Department"""
-    st.markdown("### ⚙️ Departemen Produksi Lapangan")
-    
-    st.info(f"📋 **Referensi:** {db.get('Master Schedule', 'N/A')} | {db.get('PWBS / Area Kerja', 'N/A')}")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        prog_val = st.slider(
-            "Persentase Progres Perakitan Blok Lambung (%)",
-            min_value=0, max_value=100, value=65, step=5,
-            key="slider_progres_produksi"
-        )
-        st.progress(prog_val / 100)
-    
-    with col2:
-        biaya_input = st.number_input(
-            "Biaya Operasional Tambahan Lapangan (Rp)",
-            min_value=0, step=5000000, value=0,
-            key="input_biaya_produksi"
-        )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    if st.button("📤 Kirim Laporan Validasi Produksi", use_container_width=True, key="btn_produksi"):
-        if biaya_input > 0:
-            total_baru = int(db.get("Biaya Konstruksi Terpakai", 0)) + int(biaya_input)
-            success = db_manager.update_single_data("Biaya Konstruksi Terpakai", str(total_baru), st.session_state.user_info['username'])
-            
-            if success:
-                show_success_toast(f"Biaya tambahan {format_currency(biaya_input)} telah dicatat")
-                st.rerun()
-            else:
-                show_error_toast("Gagal memperbarui biaya")
-        else:
-            show_warning_toast("Masukkan biaya tambahan yang valid")
-
-
-def render_department_pembelian(db: dict):
-    """Procurement Department"""
-    st.markdown("### 📦 Departemen Pembelian & Logistik")
-    
-    with st.form("form_pembelian", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            v_name = st.text_input(
-                "Mitra Pabrikan / Supplier",
-                value=db.get("Vendor Utama Logistik", ""),
-                placeholder="Masukkan nama vendor"
-            )
-        
-        with col2:
-            v_vol = st.number_input(
-                "Volume Pengadaan Komponen (Ton)",
-                min_value=0, step=10, value=50
-            )
-        
-        v_target_date = st.date_input("Target Kedatangan Material")
-        
-        if st.form_submit_button("📋 Ajukan Nota Permintaan Pembelian", use_container_width=True):
-            if v_name and v_vol > 0:
-                success = db_manager.update_single_data("Vendor Utama Logistik", v_name, st.session_state.user_info['username'])
-                if success:
-                    show_warning_toast(f"✅ Permintaan diteruskan: {v_vol} Ton dari {v_name} | Target: {v_target_date}")
+    # 2. Hero Section with Background Image & Top-Right Switch Mode
+    with st.container(key="sibs_hero_section"):
+        # Top Row of Hero Section: Left Eyebrow & Right Switch Mode Button
+        col_hero_tag, col_hero_switch = st.columns([7.2, 2.8])
+        with col_hero_tag:
+            st.markdown("""
+                <div style="display: flex; align-items: center; gap: 10px; padding-top: 4px;">
+                    <span class="sibs-hero-tag">SISTEM INTEGRASI BISNIS GALANGAN</span>
+                    <span class="sibs-hero-badge">STANDAR BKI KELAS 750 GT</span>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_hero_switch:
+            # Switch Mode toggle positioned exactly at the top right of the hero section
+            if is_dark:
+                if st.button("Mode: Terang", key="hero_switch_theme", use_container_width=True):
+                    st.session_state.theme = "light"
                     st.rerun()
             else:
-                show_error_toast("Isi semua field dengan benar")
+                if st.button("Mode: Gelap", key="hero_switch_theme", use_container_width=True):
+                    st.session_state.theme = "dark"
+                    st.rerun()
 
-
-def render_department_qaqa(db: dict):
-    """Quality Assurance Department"""
-    st.markdown("### ✔️ Departemen QA / QC")
-    
-    st.info(f"📋 **Log Terakhir:** {db.get('Status Inspeksi QA/QC', 'N/A')}")
-    
-    status_options = [
-        "Lolos Uji NDT Radiography Butt Joint Blok M1",
-        "Sertifikasi Material Mill Certificate Pelat Baja Disetujui BKI",
-        "Ditemukan Deformasi Pelat pada Area Blok Bow (Butuh Rework)",
-        "Sertifikasi Lasan Blok Stern Disetujui Class Society"
-    ]
-    
-    status_qa = st.selectbox(
-        "Perbarui Kualifikasi Mutu Konstruksi",
-        status_options,
-        key="select_status_qa"
-    )
-    
-    notes = st.text_area(
-        "Catatan Inspeksi (Opsional)",
-        placeholder="Masukkan detail inspeksi..."
-    )
-    
-    if st.button("✅ Validasi Dokumen Mutu", use_container_width=True, key="btn_qaqa"):
-        success = db_manager.update_single_data("Status Inspeksi QA/QC", status_qa, st.session_state.user_info['username'])
-        if success:
-            show_success_toast("Status inspeksi berhasil dipublikasikan")
-            st.rerun()
-        else:
-            show_error_toast("Gagal memperbarui status")
-
-
-def render_department_gudang(db: dict):
-    """Warehouse Department"""
-    st.markdown("### 🏭 Departemen Gudang Material")
-    
-    stok_current = int(db.get("Volume Stok Pelat Baja (Gudang)", 0))
-    
-    st.markdown(f"**Stok Saat Ini:** <span style='color: #38bdf8; font-size: 20px; font-weight: bold;'>{stok_current} Ton</span>", unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        tipe_mutasi = st.radio(
-            "Aksi Mutasi Inventaris",
-            [
-                "Material Masuk (Lolos Inspeksi)",
-                "Pengambilan untuk Bengkel Produksi"
-            ],
-            key="radio_gudang"
-        )
-    
-    with col2:
-        vol_mutasi = st.number_input(
-            "Kuantitas Berat Material (Ton)",
-            min_value=1, value=15, step=5,
-            key="input_gudang"
-        )
-    
-    if st.button("💾 Eksekusi Mutasi Gudang", use_container_width=True, key="btn_gudang"):
-        if "Masuk" in tipe_mutasi:
-            stok_akhir = stok_current + vol_mutasi
-            action = "Penerimaan Material"
-        else:
-            if vol_mutasi > stok_current:
-                show_error_toast(f"Stok tidak cukup. Tersedia: {stok_current} Ton")
-                return
-            stok_akhir = stok_current - vol_mutasi
-            action = "Pengeluaran Material"
-        
-        success = db_manager.update_single_data("Volume Stok Pelat Baja (Gudang)", str(stok_akhir), st.session_state.user_info['username'])
-        if success:
-            show_success_toast(f"✅ {action}: {vol_mutasi} Ton | Stok Akhir: {stok_akhir} Ton")
-            st.rerun()
-        else:
-            show_error_toast("Gagal mencatat mutasi")
-
-
-def render_department_fasilitas(db: dict):
-    """Facilities Management Department"""
-    st.markdown("### 🔧 Departemen Manajemen Fasilitas")
-    
-    st.info(f"🏗️ **Status Infrastruktur:** {db.get('Kelayakan Fasilitas Gantry Crane', 'N/A')}")
-    
-    fasilitas_options = [
-        "Operasional Normal - Sertifikasi Aktif",
-        "Gantry Crane Jalur Rel Selatan dalam Kalibrasi Rutin",
-        "Fasilitas Slipway Luncuran Kosong dan Siap",
-        "Maintenance Crane Utama - Tidak Beroperasi"
-    ]
-    
-    status_fasilitas = st.selectbox(
-        "Perbarui Log Kondisi Fasilitas Mekanis",
-        fasilitas_options,
-        key="select_fasilitas"
-    )
-    
-    maintenance_notes = st.text_area(
-        "Catatan Pemeliharaan",
-        placeholder="Masukkan catatan maintenance..."
-    )
-    
-    if st.button("🔧 Update Log Fasilitas", use_container_width=True, key="btn_fasilitas"):
-        success = db_manager.update_single_data("Kelayakan Fasilitas Gantry Crane", status_fasilitas, st.session_state.user_info['username'])
-        if success:
-            show_success_toast("Kondisi fasilitas berhasil diperbarui")
-            st.rerun()
-        else:
-            show_error_toast("Gagal memperbarui fasilitas")
-
-
-def render_department_eksekutif(db: dict):
-    """Executive Dashboard"""
-    st.markdown("### 📈 Dashboard Eksekutif Pemantau")
-    
-    st.markdown("**Status Konsolidasi Parameter Riil (SQLite Database)**")
-    
-    # Create dataframe for display
-    df_data = pd.DataFrame(
-        list(db.items()),
-        columns=['Parameter Manufaktur Galangan', 'Status Valid Terkini']
-    )
-    
-    st.dataframe(df_data, use_container_width=True, hide_index=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Summary metrics
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        anggaran = int(db.get("Anggaran Alokasi Proyek", 0))
-        terpakai = int(db.get("Biaya Konstruksi Terpakai", 0))
-        utilization = (terpakai / anggaran * 100) if anggaran > 0 else 0
-        st.metric("💰 Budget Utilization", f"{utilization:.1f}%", f"{format_currency(terpakai)}")
-    
-    with col2:
-        stok = int(db.get("Volume Stok Pelat Baja (Gudang)", 0))
-        st.metric("📦 Inventory Status", f"{stok} Ton", "Material Baja")
-
-
-# ==================== MANAJEMEN DATA PAGE ====================
-
-def render_manajemen_data():
-    """Data management page"""
-    render_dashboard_header(
-        "🗂️ Manajemen Data Sistem",
-        "Kelola data pengguna, backup, dan konfigurasi database"
-    )
-    
-    tabs = st.tabs(["👥 Manajemen Pengguna", "📊 Manajemen Data", "🔄 Backup & Restore"])
-    
-    with tabs[0]:
-        render_user_management()
-    
-    with tabs[1]:
-        render_data_management()
-    
-    with tabs[2]:
-        render_backup_section()
-
-
-def render_user_management():
-    """User management section"""
-    st.markdown(render_premium_card("👥 Daftar Pengguna Sistem"), unsafe_allow_html=True)
-    
-    users = db_manager.get_all_users()
-    if users:
-        df_users = pd.DataFrame(users)
-        st.dataframe(df_users, use_container_width=True, hide_index=True)
-    else:
-        show_info_toast("Tidak ada data pengguna")
-
-
-def render_data_management():
-    """Data management section"""
-    st.markdown(render_premium_card("📊 Manajemen Data Proyek"), unsafe_allow_html=True)
-    
-    db = db_manager.get_all_project_data()
-    df = pd.DataFrame(list(db.items()), columns=['Parameter', 'Nilai'])
-    
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    with st.expander("✏️ Edit Parameter Data"):
-        selected_param = st.selectbox(
-            "Pilih Parameter",
-            list(db.keys()),
-            key="select_edit_param"
-        )
-        
-        new_value = st.text_input(
-            "Nilai Baru",
-            value=db[selected_param],
-            key="input_edit_param"
-        )
-        
-        if st.button("💾 Simpan Perubahan", key="btn_edit_param"):
-            success = db_manager.update_single_data(selected_param, new_value, st.session_state.user_info['username'])
-            if success:
-                show_success_toast(f"Parameter '{selected_param}' berhasil diperbarui")
-                st.rerun()
-            else:
-                show_error_toast("Gagal memperbarui parameter")
-
-
-def render_backup_section():
-    """Backup and restore section"""
-    st.markdown(render_premium_card("🔄 Backup & Restore Database"), unsafe_allow_html=True)
-    
-    st.info("Fitur backup dan restore akan diimplementasikan di versi selanjutnya")
-    
-    if st.button("📥 Backup Database Sekarang", use_container_width=True):
-        show_info_toast("Backup functionality coming soon...")
-
-
-# ==================== LAPORAN PAGE ====================
-
-def render_laporan():
-    """Reports and analytics page"""
-    render_dashboard_header(
-        "📈 Laporan & Analisis",
-        "Laporan komprehensif dan analisis data operasional"
-    )
-    
-    tabs = st.tabs(["📊 Analisis Keuangan", "📦 Analisis Inventori", "📋 Audit Log"])
-    
-    with tabs[0]:
-        budget_status = db_manager.get_budget_status()
-        if budget_status:
-            df_budget = pd.DataFrame(list(budget_status.items()), columns=['Parameter', 'Nilai'])
-            st.dataframe(df_budget, use_container_width=True, hide_index=True)
-        else:
-            show_info_toast("Tidak ada data keuangan")
-    
-    with tabs[1]:
-        inventory_status = db_manager.get_inventory_status()
-        if inventory_status:
-            df_inventory = pd.DataFrame(list(inventory_status.items()), columns=['Parameter', 'Nilai'])
-            st.dataframe(df_inventory, use_container_width=True, hide_index=True)
-        else:
-            show_info_toast("Tidak ada data inventori")
-    
-    with tabs[2]:
-        audit_logs = db_manager.get_audit_logs(limit=50)
-        if audit_logs:
-            df_audit = pd.DataFrame(audit_logs)
-            st.dataframe(df_audit, use_container_width=True, hide_index=True)
-        else:
-            show_info_toast("Tidak ada audit log")
-
-
-# ==================== PENGATURAN SISTEM PAGE ====================
-
-def render_pengaturan():
-    """System settings page"""
-    render_dashboard_header(
-        "⚙️ Pengaturan Sistem",
-        "Konfigurasi dan pengaturan aplikasi"
-    )
-    
-    tabs = st.tabs(["🔧 Konfigurasi Umum", "🔐 Keamanan", "📋 Tentang Sistem"])
-    
-    with tabs[0]:
-        st.markdown(render_premium_card("🔧 Konfigurasi Aplikasi"), unsafe_allow_html=True)
-        st.write(f"**Aplikasi:** {app_config.APP_TITLE}")
-        st.write(f"**Versi:** {app_config.VERSION}")
-        st.write(f"**Mode Debug:** {'✅ Enabled' if app_config.DEBUG else '❌ Disabled'}")
-    
-    with tabs[1]:
-        st.markdown(render_premium_card("🔐 Pengaturan Keamanan"), unsafe_allow_html=True)
-        st.write(f"**Min Password Length:** {security_config.PASSWORD_MIN_LENGTH} karakter")
-        st.write(f"**Max Login Attempts:** {security_config.MAX_LOGIN_ATTEMPTS} percobaan")
-        st.write(f"**Session Timeout:** {security_config.SESSION_TIMEOUT} detik")
-    
-    with tabs[2]:
-        st.markdown(render_premium_card("📋 Tentang NAV-MIS"), unsafe_allow_html=True)
+        # Hero Main Body (Left-Aligned, Large Display Title, High Legibility Paragraph)
         st.markdown("""
-        **NAV-MIS: Sistem Integrasi Manajemen Galangan Kapal**
-        
-        Sistem modern dan terstruktur untuk manajemen operasional galangan kapal dengan fitur:
-        - ✅ Dashboard terpadu
-        - ✅ Manajemen multi-departemen
-        - ✅ Tracking budget dan inventori
-        - ✅ Audit logging lengkap
-        - ✅ Interface user-friendly
-        
-        © 2026 PT Krakatau Steel Shipyard Division
-        """)
+            <div style="margin: 16px 0 24px 0;">
+                <div class="sibs-hero-sub-title">SISTEM INTEGRASI BISNIS & OPERASIONAL GALANGAN</div>
+                <h1 class="sibs-hero-main-title">Shipyard Integrated Business System</h1>
+                <p class="sibs-hero-paragraph">
+                    Platform tata kelola terpadu pembangunan kapal baru berbasis Block Construction Method (PWBS) 
+                    dan pemeliharaan armada maritim nasional. Mengintegrasikan sinkronisasi jadwal perakitan 7 departemen, 
+                    pengendalian serapan anggaran konstruksi real-time, ketertelusuran rantai pasok material baja, 
+                    serta pemenuhan 39 standar inspeksi klasifikasi BKI.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Responsive Dynamic Action Buttons (Matching Reference CTA Style)
+        col_cta1, col_cta2, col_blank = st.columns([2.6, 2.6, 4.8])
+        with col_cta1:
+            if st.button("Masuk Portal SIBS", type="primary", key="hero_enter_portal", use_container_width=True):
+                st.session_state.show_login = True
+                st.rerun()
+        with col_cta2:
+            if st.button("Standar Mutu BKI (39)", key="hero_bki_guide", use_container_width=True):
+                st.toast("Standar Klasifikasi BKI Volume II (Hull Construction) terdaftar: 39 kategori inspeksi aktif.")
+
+        # Cockpit Real-time Stats Footer Strip
+        st.markdown("""
+            <div class="sibs-hero-footer-bar">
+                <div class="sibs-footer-stat-item">
+                    <span class="stat-label">PROJECT AKTIF</span>
+                    <span class="stat-value">KM. Nusantara (Ro-Ro 750 GT)</span>
+                </div>
+                <div class="sibs-footer-stat-item">
+                    <span class="stat-label">METODE KONSTRUKSI</span>
+                    <span class="stat-value">PWBS 7 Tahap (HS-04 & HS-06)</span>
+                </div>
+                <div class="sibs-footer-stat-item">
+                    <span class="stat-label">PROGRESS FISIK</span>
+                    <span class="stat-value" style="color: #34D399;">55.70% (Tepat Waktu)</span>
+                </div>
+                <div class="sibs-footer-stat-item">
+                    <span class="stat-label">BASIS DATA CLOUD</span>
+                    <span class="stat-value" style="color: #60A5FA;">Supabase PostgreSQL Live</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # 3. 4 Executive Glass KPI Cards
+    st.markdown('<div id="kpi-section" style="margin-top: 10px;"></div>', unsafe_allow_html=True)
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
+        render_kpi("INTEGRASI UNIT KERJA", "7 Departemen", "Sinkronisasi Real-Time PWBS", "#38BDF8")
+    with k2:
+        render_kpi("STANDAR MUTU BKI", "39 Kategori", "Rules Vol. II Hull Construction", "#34D399")
+    with k3:
+        render_kpi("PEMANTAUAN ANGGARAN", "Terkontrol", "Material, Upah & Utilisasi Alat", "#38BDF8")
+    with k4:
+        render_kpi("LEGALITAS BERKAS", "Cetak BAP", "Berita Acara Digital Siap Cetak", "#34D399")
+
+    st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+
+    # 4. Modul 7 Departemen Terintegrasi (Interactive Glassmorphic Grid)
+    st.markdown('<div id="modul-departemen"></div>', unsafe_allow_html=True)
+    st.markdown("""
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px;">
+            <div>
+                <span class="status-pill-navy" style="margin-bottom: 6px;">ARSITEKTUR ERP MARITIM</span>
+                <h3 style="margin: 4px 0 0 0; font-size: 22px; font-weight: 800;">Modul 7 Departemen Terintegrasi</h3>
+            </div>
+            <span style="font-size: 11.5px; opacity: 0.75; font-weight: 600;">STANDAR PWBS & BKI KELAS 750 GT</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+    d1, d2, d3, d4 = st.columns(4)
+    with d1:
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:10px; font-weight:800; color:#38BDF8; background:rgba(56, 189, 248, 0.15); padding:3px 8px; border-radius:999px; border:1px solid rgba(56, 189, 248, 0.35);">MODUL 01</span>
+                <span style="font-size:10px; font-weight:700; color:#94A3B8;">PWBS LV. 1-4</span>
+            </div>
+            <h4 style="margin:0 0 8px 0; color:#FFFFFF; font-size:15px; font-weight:700;">Perencanaan & Desain</h4>
+            <p style="font-size:12px; margin:0 0 12px 0; opacity:0.85; line-height:1.6;">Dimensi utama kapal, manajemen blok lambung (HS-04/06), dan hirarki PWBS level 1-4.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:10.5px; color:#38BDF8; font-weight:600;">Lines Plan • Hydrostatic • Blok</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:10px; font-weight:800; color:#38BDF8; background:rgba(56, 189, 248, 0.15); padding:3px 8px; border-radius:999px; border:1px solid rgba(56, 189, 248, 0.35);">MODUL 02</span>
+                <span style="font-size:10px; font-weight:700; color:#94A3B8;">FABRIKASI & ERECTION</span>
+            </div>
+            <h4 style="margin:0 0 8px 0; color:#FFFFFF; font-size:15px; font-weight:700;">Produksi Lapangan</h4>
+            <p style="font-size:12px; margin:0 0 12px 0; opacity:0.85; line-height:1.6;">Jadwal perakitan 7 tahap, monitoring pemotongan/pengelasan, dan requisition material.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:10.5px; color:#38BDF8; font-weight:600;">Jadwal 7 Tahap • SPK • Progres</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with d2:
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:10px; font-weight:800; color:#38BDF8; background:rgba(56, 189, 248, 0.15); padding:3px 8px; border-radius:999px; border:1px solid rgba(56, 189, 248, 0.35);">MODUL 03</span>
+                <span style="font-size:10px; font-weight:700; color:#94A3B8;">SUPPLY CHAIN ERP</span>
+            </div>
+            <h4 style="margin:0 0 8px 0; color:#FFFFFF; font-size:15px; font-weight:700;">Pembelian & Logistik</h4>
+            <p style="font-size:12px; margin:0 0 12px 0; opacity:0.85; line-height:1.6;">Master database supplier maritim, penerbitan Purchase Order resmi, dan pelacakan DO.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:10.5px; color:#38BDF8; font-weight:600;">Vendor BKI • PO • Delivery Order</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:10px; font-weight:800; color:#34D399; background:rgba(16, 185, 129, 0.15); padding:3px 8px; border-radius:999px; border:1px solid rgba(52, 211, 153, 0.35);">MODUL 04</span>
+                <span style="font-size:10px; font-weight:700; color:#34D399;">39 KATEGORI BKI</span>
+            </div>
+            <h4 style="margin:0 0 8px 0; color:#FFFFFF; font-size:15px; font-weight:700;">Kontrol Mutu (QA/QC)</h4>
+            <p style="font-size:12px; margin:0 0 12px 0; opacity:0.85; line-height:1.6;">Verifikasi pengujian NDT las (UT/RT), checklist 39 kategori BKI, approval, dan remedial defect.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:10.5px; color:#34D399; font-weight:600;">Inspeksi BKI • NDT Las • Remedial</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with d3:
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:10px; font-weight:800; color:#38BDF8; background:rgba(56, 189, 248, 0.15); padding:3px 8px; border-radius:999px; border:1px solid rgba(56, 189, 248, 0.35);">MODUL 05</span>
+                <span style="font-size:10px; font-weight:700; color:#94A3B8;">INVENTORY & STOCK</span>
+            </div>
+            <h4 style="margin:0 0 8px 0; color:#FFFFFF; font-size:15px; font-weight:700;">Material & Gudang</h4>
+            <p style="font-size:12px; margin:0 0 12px 0; opacity:0.85; line-height:1.6;">Stok pelat Grade A, profil baja, kawat las E7018, mutasi barang keluar/masuk, dan alert minimum.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:10.5px; color:#38BDF8; font-weight:600;">Pelat Baja • Consumable • Mutasi</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:10px; font-weight:800; color:#38BDF8; background:rgba(56, 189, 248, 0.15); padding:3px 8px; border-radius:999px; border:1px solid rgba(56, 189, 248, 0.35);">MODUL 06</span>
+                <span style="font-size:10px; font-weight:700; color:#94A3B8;">ASSET & HEAVY DOCK</span>
+            </div>
+            <h4 style="margin:0 0 8px 0; color:#FFFFFF; font-size:15px; font-weight:700;">Manajemen Fasilitas</h4>
+            <p style="font-size:12px; margin:0 0 12px 0; opacity:0.85; line-height:1.6;">Gantry crane 50T, CNC plasma, graving dock, jadwal preventive maintenance, dan tarif sewa.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:10.5px; color:#38BDF8; font-weight:600;">Drydock • Crane • Maintenance</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with d4:
+        st.markdown("""
+        <div class="sibs-card" style="border-top-color:#34D399 !important; border-left-color:rgba(52, 211, 153, 0.4) !important;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:10px; font-weight:800; color:#34D399; background:rgba(16, 185, 129, 0.15); padding:3px 8px; border-radius:999px; border:1px solid rgba(52, 211, 153, 0.35);">MODUL 07</span>
+                <span style="font-size:10px; font-weight:700; color:#34D399;">EXECUTIVE DASHBOARD</span>
+            </div>
+            <h4 style="margin:0 0 8px 0; color:#34D399; font-size:15px; font-weight:700;">Eksekutif & BAP</h4>
+            <p style="font-size:12px; margin:0 0 12px 0; opacity:0.85; line-height:1.6;">Kurva S kumulatif fisik, serapan anggaran konstruksi riil, dan cetak Berita Acara Pemeriksaan (BAP) standar A4.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:10.5px; color:#34D399; font-weight:600;">Kurva S • Rekap Biaya • Cetak BAP</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 5. Spesifikasi Kapal Riset & Standar Mutu BKI (Glass Tables)
+    st.markdown('<div id="standar-bki"></div><div id="kapal-riset"></div>', unsafe_allow_html=True)
+    col_ship_spec, col_bki_spec = st.columns([1, 1])
+    with col_ship_spec:
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h4 style="margin:0; font-size:15px; font-weight:700; color:#FFFFFF;">Proyek Aktif: KM. Nusantara (Ferry Ro-Ro 750 GT)</h4>
+                <span class="status-pill-navy">DATA TEKNIS</span>
+            </div>
+            <table style="width:100%; font-size:12.5px; border-collapse:collapse; opacity:0.92;">
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Panjang Keseluruhan (LOA)</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">56.02 m</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Panjang Antara Garis Tegak (LBP)</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">49.80 m</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Lebar Moulded (B)</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">14.00 m</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Tinggi Moulded (H)</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">4.10 m</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Sarat Air Rancang (T)</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">2.70 m</td></tr>
+                <tr><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Kecepatan Dinas (Vs)</td><td style="text-align:right; font-weight:700; color:#38BDF8;">11.00 knot</td></tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_bki_spec:
+        st.markdown("""
+        <div class="sibs-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h4 style="margin:0; font-size:15px; font-weight:700; color:#FFFFFF;">Verifikasi Standar Mutu Biro Klasifikasi Indonesia</h4>
+                <span class="status-pill-green">BKI COMPLIANT</span>
+            </div>
+            <table style="width:100%; font-size:12.5px; border-collapse:collapse; opacity:0.92;">
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Regulasi Acuan</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">BKI Vol. II (Hull Construction)</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Kategori Inspeksi</td><td style="text-align:right; font-weight:700; color:#34D399;">39 Kategori Pengujian Aktif</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Metode NDT Pengelasan</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">UT (Ultrasonic) & RT (Radiographic)</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Sertifikasi Material</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">Marine Grade Steel Mill Certificate</td></tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);"><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Output Dokumen Legal</td><td style="text-align:right; font-weight:700; color:#FFFFFF;">Berita Acara Pemeriksaan (BAP) Fisik</td></tr>
+                <tr><td style="padding:6px 0; font-weight:600; color:#94A3B8;">Audit Trail</td><td style="text-align:right; font-weight:700; color:#38BDF8;">Digital Timestamp & Inspector Sign</td></tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 6. Floating Support Widget (Matching Reference Glass Capsule)
+    st.markdown("""
+        <a href="#beranda" class="sibs-floating-support">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 13.85 2.5 15.58 3.37 17.07L2 22L7.07 20.67C8.54 21.52 10.21 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM16.5 15.5C16.3 16 15.1 16.6 14.6 16.7C14.1 16.8 13.5 16.8 12.9 16.6C11.8 16.2 10.7 15.5 9.7 14.5C8.7 13.5 8 12.4 7.6 11.3C7.4 10.7 7.4 10.1 7.5 9.6C7.6 9.1 8.2 7.9 8.7 7.7C8.9 7.6 9.1 7.6 9.3 7.6C9.5 7.6 9.7 7.6 9.8 8C10.1 8.7 10.6 9.9 10.7 10.1C10.8 10.3 10.8 10.5 10.7 10.7C10.6 10.9 10.5 11 10.4 11.1C10.3 11.2 10.2 11.3 10.1 11.4C10 11.5 9.9 11.6 10 11.8C10.2 12.2 10.6 12.9 11.2 13.5C11.8 14.1 12.5 14.5 12.9 14.7C13.1 14.8 13.2 14.7 13.3 14.6C13.4 14.5 13.5 14.4 13.6 14.3C13.7 14.2 13.8 14.1 14 14.2C14.2 14.3 15.4 14.8 15.7 15C16 15.2 16.1 15.3 16.1 15.4C16.2 15.4 16.7 15 16.5 15.5Z"/>
+            </svg>
+            <span>Pusat Bantuan SIBS</span>
+        </a>
+    """, unsafe_allow_html=True)
+
+    # 7. Corporate Footer
+    st.markdown("<hr style='margin:30px 0 16px 0; border-color: rgba(148, 163, 184, 0.2);'>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div style="text-align: center; font-size: 11.5px; opacity:0.75; padding-bottom: 24px;">
+            SIBS Versi {app_config.VERSION} | Sistem Integrasi Bisnis Galangan Kapal — Berdasarkan Riset Unhas & Galangan Kapal Nasional<br>
+            Didukung oleh Supabase PostgreSQL. Seluruh aktivitas transaksi operasional tercatat pada audit trail resmi.
+        </div>
+    """, unsafe_allow_html=True)
 
 
-# ==================== IMPORT SECURITY CONFIG ====================
-from config import security_config
+# ==================== LOGIN PAGE ====================
+def render_login_page():
+    """Halaman login formal SIBS dengan switch mode di kanan atas."""
+    is_dark = st.session_state.theme == "dark"
+    col_back, col_spacer, col_theme = st.columns([2, 5, 1.8])
+    with col_back:
+        if st.button("Kembali ke Halaman Utama", use_container_width=True):
+            st.session_state.show_login = False
+            st.rerun()
+    with col_theme:
+        if is_dark:
+            if st.button("Mode: Terang", key="login_theme_btn", use_container_width=True):
+                st.session_state.theme = "light"
+                st.rerun()
+        else:
+            if st.button("Mode: Gelap", key="login_theme_btn", use_container_width=True):
+                st.session_state.theme = "dark"
+                st.rerun()
+
+    c1, c2, c3 = st.columns([1, 1.3, 1])
+    with c2:
+        st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+            <div class="sibs-card">
+                <span class="status-pill-navy">PORTAL OTENTIKASI RESMI</span>
+                <h3 style="margin:8px 0 4px 0; font-size:20px; font-weight:800;">Masuk ke Portal SIBS</h3>
+                <p style="font-size:12px; opacity:0.8; margin-bottom:16px;">
+                    Gunakan kredensial akun departemen Anda untuk mengakses sistem.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        if not db_manager.is_connected:
+            st.warning("[PERINGATAN] Database Supabase belum terhubung. Periksa konfigurasi .env.")
+
+        with st.form("form_login"):
+            username = st.text_input("Username Departemen / NIP *", placeholder="Contoh: admin, produksi, qaqc")
+            password = st.text_input("Kata Sandi *", type="password", placeholder="••••••••")
+            submit_login = st.form_submit_button("Masuk ke Sistem", use_container_width=True)
+
+            if submit_login:
+                ok, user_info, msg = auth_manager.authenticate_user(username.strip(), password)
+                if ok:
+                    st.session_state.logged_in = True
+                    st.session_state.user_info = user_info
+                    st.session_state.show_login = False
+                    st.session_state.last_sync = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    
+                    role = user_info.get("role", "")
+                    role_map = {
+                        "perencanaan": "Desain & Perencanaan",
+                        "produksi": "Produksi Lapangan",
+                        "pembelian": "Pembelian & Logistik",
+                        "qaqc": "Quality Control (QA/QC)",
+                        "gudang": "Material & Gudang",
+                        "fasilitas": "Manajemen Fasilitas",
+                        "eksekutif": "Manajemen Eksekutif & BAP",
+                        "admin": "Dashboard Eksekutif"
+                    }
+                    st.session_state.nav_menu = role_map.get(role, "Dashboard Eksekutif")
+                    show_success(f"Selamat datang, {user_info.get('nama_lengkap')}!")
+                    st.rerun()
+                else:
+                    show_error(msg)
+
+        with st.expander("Daftar Akun Departemen Bawaan (Default)"):
+            st.markdown("""
+            | Role | Username | Password | Departemen |
+            | :--- | :--- | :--- | :--- |
+            | Administrator | `admin` | `admin123` | Akses Penuh / IT |
+            | Perencanaan | `perencanaan` | `super123` | Desain & PWBS |
+            | Produksi | `produksi` | `super123` | Operasional Lapangan |
+            | Pembelian | `pembelian` | `super123` | Pengadaan & PO |
+            | QA / QC | `qaqc` | `super123` | Mutu & Inspeksi |
+            | Gudang | `gudang` | `super123` | Inventaris & Mutasi |
+            | Fasilitas | `fasilitas` | `super123` | Alat & Maintenance |
+            | Eksekutif | `eksekutif` | `super123` | Pimpinan Galangan |
+            """)
 
 
-# ==================== MAIN APPLICATION FLOW ====================
+# ==================== ADMIN VIEW ====================
+def render_admin_view(user_info: dict):
+    """Halaman Pengaturan Administrator & Audit Log."""
+    render_page_header(
+        title="Pengaturan Sistem & Audit Log",
+        subtitle="Manajemen Pengguna, Hak Akses Departemen, dan Pemantauan Jejak Audit",
+        badge="ADMINISTRATOR"
+    )
 
+    tab_users, tab_new_user, tab_audit = st.tabs([
+        "Daftar Pengguna Sistem",
+        "Tambah Pengguna Baru",
+        "Log Audit Aktivitas"
+    ])
+
+    with tab_users:
+        st.markdown("### Daftar Pengguna Terdaftar")
+        users = db_manager.get_all_users()
+        if users:
+            st.dataframe(pd.DataFrame(users), use_container_width=True, hide_index=True)
+        else:
+            st.info("Belum ada data pengguna yang terbaca dari database.")
+
+    with tab_new_user:
+        st.markdown("### Pendaftaran Pengguna Baru")
+        with st.form("form_add_user"):
+            c1, c2 = st.columns(2)
+            with c1:
+                u_name = st.text_input("Username *")
+                u_fullname = st.text_input("Nama Lengkap *")
+                u_pw = st.text_input("Password Awal *", type="password")
+            with c2:
+                u_role = st.selectbox("Role / Hak Akses *", list(DEPARTMENTS.keys()))
+                u_dept = st.text_input("Nama Divisi / Bagian", value="Galangan Kapal")
+
+            submit_u = st.form_submit_button("Daftarkan Pengguna")
+            if submit_u:
+                if not u_name or not u_pw or not u_fullname:
+                    show_error("Username, Nama Lengkap, dan Password wajib diisi.")
+                else:
+                    new_user = {
+                        "username": u_name.strip(),
+                        "password_hash": hash_password(u_pw),
+                        "nama_lengkap": u_fullname.strip(),
+                        "role": u_role,
+                        "departemen": u_dept.strip(),
+                        "is_active": True
+                    }
+                    ok = db_manager.create_user(new_user)
+                    if ok:
+                        db_manager.log_action(user_info.get("username", "admin"), "CREATE_USER", "users", u_name, keterangan=f"Pendaftaran user {u_name}")
+                        show_success(f"Pengguna '{u_name}' berhasil didaftarkan!")
+                        st.rerun()
+                    else:
+                        show_error("Gagal mendaftarkan pengguna (mungkin username sudah digunakan).")
+
+    with tab_audit:
+        st.markdown("### Jejak Audit Sistem (Audit Trail)")
+        st.caption("Seluruh aktivitas transaksi, modifikasi data, dan otentikasi tercatat secara permanen.")
+        logs = db_manager.get_audit_logs(limit=150)
+        if logs:
+            st.dataframe(pd.DataFrame(logs), use_container_width=True, hide_index=True)
+        else:
+            st.info("Belum ada catatan log audit.")
+
+
+# ==================== MAIN APPLICATION ROUTER ====================
 def main():
-    """Main application flow"""
-    
-    # Show login page if not authenticated
     if not st.session_state.logged_in:
-        render_login_page()
+        if st.session_state.show_login:
+            render_login_page()
+        else:
+            render_landing_page()
+        return
+
+    # User is logged in — render App Layout
+    user = st.session_state.user_info
+    role = user.get("role", "viewer")
+
+    # ------------------ SIDEBAR ------------------
+    with st.sidebar:
+        # Brand Header
+        brand_color = "#3B82F6" if st.session_state.theme == "dark" else "#1E3A8A"
+        st.markdown(f"""
+            <div style="padding: 10px 0 14px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.2); margin-bottom: 14px;">
+                <div style="font-size: 20px; font-weight: 800; color: {brand_color}; letter-spacing: 0.5px;">SIBS</div>
+                <div style="font-size: 10.5px; font-weight: 600; opacity: 0.7;">SHIPYARD INTEGRATED BUSINESS SYSTEM</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Theme Switcher (Dark / Light Mode)
+        col_t1, col_t2 = st.columns([1.1, 1.2])
+        with col_t1:
+            st.markdown("<div style='padding-top:5px; font-size:12px; font-weight:600;'>Mode Tema:</div>", unsafe_allow_html=True)
+        with col_t2:
+            current_theme_idx = 0 if st.session_state.theme == "light" else 1
+            theme_choice = st.radio("ThemeToggle", ["Terang", "Gelap"], index=current_theme_idx, horizontal=True, label_visibility="collapsed")
+            new_theme = "light" if theme_choice == "Terang" else "dark"
+            if new_theme != st.session_state.theme:
+                st.session_state.theme = new_theme
+                st.rerun()
+
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+
+        # User Profile Card
+        st.markdown(f"""
+            <div style="border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px;">
+                <div style="font-size: 13px; font-weight: 700;">{user.get('nama_lengkap', 'User')}</div>
+                <div style="font-size: 11px; color: #3B82F6; font-weight: 600; margin-top: 1px;">{user.get('department_display', role.upper())}</div>
+                <div style="font-size: 10px; opacity:0.65; margin-top: 3px;">User: @{user.get('username')}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Database connection indicator
+        if db_manager.is_connected:
+            st.markdown('<span class="status-pill-green">ONLINE: SUPABASE</span>', unsafe_allow_html=True)
+        else:
+            st.markdown('<span class="status-pill-red">OFFLINE: DATABASE</span>', unsafe_allow_html=True)
+
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+        # Active Project Selector
+        all_ships = db_manager.get_all_kapal()
+        if all_ships:
+            ship_options = {f"{s['id_project']} — {s.get('nama_kapal', '')}": s["id_project"] for s in all_ships}
+            current_idx = 0
+            keys_list = list(ship_options.keys())
+            for idx, k in enumerate(keys_list):
+                if ship_options[k] == st.session_state.active_project:
+                    current_idx = idx
+                    break
+            sel_ship_label = st.selectbox("Proyek Kapal Aktif:", keys_list, index=current_idx)
+            st.session_state.active_project = ship_options[sel_ship_label]
+        else:
+            st.session_state.active_project = "NB-002"
+            st.caption(f"Proyek Aktif: **{st.session_state.active_project}** (Default)")
+
+        st.markdown("<hr style='margin: 12px 0; border-color: rgba(148, 163, 184, 0.2);'>", unsafe_allow_html=True)
+
+        # Navigation Menu
+        nav_options = [
+            "Dashboard Eksekutif",
+            "Desain & Perencanaan",
+            "Produksi Lapangan",
+            "Pembelian & Logistik",
+            "Quality Control (QA/QC)",
+            "Material & Gudang",
+            "Manajemen Fasilitas",
+            "Manajemen Eksekutif & BAP"
+        ]
+        if role == "admin":
+            nav_options.append("Pengaturan & Audit Log")
+
+        selected_page = st.radio("Navigasi Departemen:", nav_options, index=nav_options.index(st.session_state.nav_menu) if st.session_state.nav_menu in nav_options else 0)
+        st.session_state.nav_menu = selected_page
+
+        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+        # Logout Button
+        if st.button("Keluar Sistem", use_container_width=True):
+            db_manager.log_action(user.get("username", "user"), "LOGOUT", keterangan="Logout dari sistem")
+            st.session_state.logged_in = False
+            st.session_state.user_info = {}
+            st.session_state.show_login = False
+            st.rerun()
+
+    # ------------------ MAIN ROUTER ------------------
+    active_proj = st.session_state.active_project
+
+    dept_key_map = {
+        "Desain & Perencanaan": "perencanaan",
+        "Produksi Lapangan": "produksi",
+        "Pembelian & Logistik": "pembelian",
+        "Quality Control (QA/QC)": "qaqc",
+        "Material & Gudang": "gudang",
+        "Manajemen Fasilitas": "fasilitas",
+        "Manajemen Eksekutif & BAP": "eksekutif"
+    }
+
+    req_dept = dept_key_map.get(selected_page)
+    if req_dept and not auth_manager.can_access_department(user, req_dept):
+        st.warning(f"[AKSES TERBATAS] Anda login sebagai {user.get('department_display')}. Departemen ini hanya dapat diakses oleh personil terkait atau Administrator.")
+
+    if selected_page in ["Dashboard Eksekutif", "Manajemen Eksekutif & BAP"]:
+        eksekutif.render(user, active_proj)
+    elif selected_page == "Desain & Perencanaan":
+        perencanaan.render(user, active_proj)
+    elif selected_page == "Produksi Lapangan":
+        produksi.render(user, active_proj)
+    elif selected_page == "Pembelian & Logistik":
+        pembelian.render(user, active_proj)
+    elif selected_page == "Quality Control (QA/QC)":
+        qaqc.render(user, active_proj)
+    elif selected_page == "Material & Gudang":
+        gudang.render(user, active_proj)
+    elif selected_page == "Manajemen Fasilitas":
+        fasilitas.render(user, active_proj)
+    elif selected_page == "Pengaturan & Audit Log" and role == "admin":
+        render_admin_view(user)
     else:
-        # Render sidebar and get navigation choice
-        page = render_sidebar()
-        
-        # Route to appropriate page
-        if page == "Dashboard Terpusat":
-            render_dashboard()
-        elif page == "Manajemen Data":
-            render_manajemen_data()
-        elif page == "Laporan & Analisis":
-            render_laporan()
-        elif page == "Pengaturan Sistem":
-            render_pengaturan()
+        eksekutif.render(user, active_proj)
 
-
-# ==================== RUN APPLICATION ====================
 
 if __name__ == "__main__":
     main()
