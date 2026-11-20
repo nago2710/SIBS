@@ -114,7 +114,7 @@ def render_landing_page():
         col_hero_tag, col_hero_switch = st.columns([7.2, 2.8])
         with col_hero_tag:
             st.markdown("""
-                <div style="display: flex; align-items: center; gap: 10px; padding-top: 4px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 4px;">
                     <span class="sibs-hero-tag">SISTEM INTEGRASI BISNIS GALANGAN</span>
                     <span class="sibs-hero-badge">STANDAR BKI KELAS 750 GT</span>
                 </div>
@@ -193,7 +193,7 @@ def render_landing_page():
     # 4. Modul 7 Departemen Terintegrasi (Interactive Glassmorphic Grid)
     st.markdown('<div id="modul-departemen"></div>', unsafe_allow_html=True)
     st.markdown("""
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
             <div>
                 <span class="status-pill-navy" style="margin-bottom: 6px;">ARSITEKTUR ERP MARITIM</span>
                 <h3 style="margin: 4px 0 0 0; font-size: 22px; font-weight: 800;">Modul 7 Departemen Terintegrasi</h3>

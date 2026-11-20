@@ -419,6 +419,344 @@ def apply_sibs_theme(theme: str = "light"):
         h1, h2, h3, h4, h5, h6 {{ color:#F8FAFC !important; }}
         p, span, label, div {{ color:#CBD5E1; }}
 
+        /* Header Status Box Base */
+        .sibs-header-status-box {{
+            text-align: right;
+            padding-top: 8px;
+        }}
+        .sibs-header-date {{
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }}
+
+        /* =========================================================================
+           RESPONSIVE DESIGN SYSTEM (PC, TABLET, HANDPHONE) — DARK MODE
+           ========================================================================= */
+
+        /* 1. PC / DESKTOP (> 1024px) */
+        @media screen and (min-width: 1025px) {{
+            .block-container {{
+                padding: 1.25rem 3.5rem 3rem 3.5rem !important;
+                max-width: 1440px !important;
+            }}
+            .sibs-navbar-container {{
+                padding: 16px 32px !important;
+            }}
+            .sibs-hero-wrapper, .st-key-sibs_hero_section {{
+                padding: 38px 46px 40px 46px !important;
+            }}
+            .sibs-hero-main-title {{
+                font-size: 42px !important;
+            }}
+            .sibs-hero-footer-bar {{
+                grid-template-columns: repeat(4, 1fr) !important;
+            }}
+        }}
+
+        /* 2. TABLET (641px - 1024px) */
+        @media screen and (min-width: 641px) and (max-width: 1024px) {{
+            .block-container {{
+                padding: 1rem 1.75rem 2.5rem 1.75rem !important;
+                max-width: 100% !important;
+            }}
+            .sibs-navbar-container {{
+                padding: 14px 20px !important;
+                margin-bottom: 18px !important;
+            }}
+            .sibs-brand-title {{
+                font-size: 16.5px !important;
+            }}
+            .sibs-brand-sub {{
+                font-size: 9.5px !important;
+                padding-left: 8px !important;
+            }}
+            .sibs-nav-links {{
+                gap: 14px !important;
+            }}
+            .sibs-nav-link {{
+                font-size: 12px !important;
+            }}
+            .sibs-hero-wrapper, .st-key-sibs_hero_section {{
+                padding: 28px 24px 30px 24px !important;
+                border-radius: 14px !important;
+                margin-bottom: 20px !important;
+            }}
+            .sibs-hero-main-title {{
+                font-size: 30px !important;
+                line-height: 1.2 !important;
+            }}
+            .sibs-hero-paragraph {{
+                font-size: 13.5px !important;
+                line-height: 1.6 !important;
+            }}
+            .sibs-hero-footer-bar {{
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+                padding: 14px 18px !important;
+            }}
+            .sibs-card {{
+                padding: 18px 20px !important;
+            }}
+            .sibs-kpi {{
+                padding: 16px 18px !important;
+            }}
+            .sibs-kpi-value {{
+                font-size: 23px !important;
+            }}
+
+            /* Responsive wrapping for 3+ column layouts on tablet */
+            div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"]:nth-child(3)) {{
+                flex-wrap: wrap !important;
+                gap: 14px !important;
+            }}
+            div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"]:nth-child(3)) > div[data-testid="column"] {{
+                flex: 1 1 calc(50% - 14px) !important;
+                min-width: calc(50% - 14px) !important;
+                max-width: 100% !important;
+            }}
+
+            .stTabs [data-baseweb="tab-list"] {{
+                gap: 16px !important;
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
+                -webkit-overflow-scrolling: touch !important;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                font-size: 13px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }}
+            .sibs-floating-support {{
+                bottom: 18px !important;
+                right: 18px !important;
+                padding: 9px 16px !important;
+                font-size: 12px !important;
+            }}
+        }}
+
+        /* 3. HANDPHONE / MOBILE (<= 640px) */
+        @media screen and (max-width: 640px) {{
+            .block-container {{
+                padding: 0.75rem 0.75rem 2.5rem 0.75rem !important;
+                max-width: 100% !important;
+            }}
+
+            /* Mobile Navbar (Stacked Header + Smooth Horizontal Swipable Links) */
+            .sibs-navbar-container {{
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding: 12px 14px !important;
+                margin-bottom: 14px !important;
+                gap: 10px !important;
+                border-radius: 10px !important;
+            }}
+            .sibs-brand-title {{
+                font-size: 15px !important;
+                justify-content: flex-start !important;
+                gap: 8px !important;
+            }}
+            .sibs-brand-sub {{
+                display: none !important;
+            }}
+            .sibs-nav-links {{
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                gap: 12px !important;
+                padding: 6px 2px 4px 2px !important;
+                scrollbar-width: none !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }}
+            .sibs-nav-links::-webkit-scrollbar {{
+                display: none !important;
+            }}
+            .sibs-nav-link {{
+                font-size: 11.5px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }}
+
+            /* Mobile Hero */
+            .sibs-hero-wrapper, .st-key-sibs_hero_section {{
+                padding: 18px 14px 20px 14px !important;
+                border-radius: 12px !important;
+                margin-bottom: 16px !important;
+                background-position: center center !important;
+            }}
+            .sibs-hero-tag, .sibs-hero-badge {{
+                font-size: 9px !important;
+                padding: 4px 8px !important;
+                letter-spacing: 0.4px !important;
+            }}
+            .sibs-hero-sub-title {{
+                font-size: 10px !important;
+                letter-spacing: 0.8px !important;
+                margin-bottom: 4px !important;
+            }}
+            .sibs-hero-main-title {{
+                font-size: 22px !important;
+                line-height: 1.25 !important;
+                margin: 6px 0 10px 0 !important;
+            }}
+            .sibs-hero-paragraph {{
+                font-size: 12px !important;
+                line-height: 1.55 !important;
+                margin-bottom: 14px !important;
+            }}
+
+            /* Switch Mode Button on Mobile */
+            .st-key-hero_switch_theme, .st-key-switch_theme_hero {{
+                display: flex !important;
+                justify-content: flex-start !important;
+                margin-top: 6px !important;
+            }}
+            .st-key-hero_switch_theme button, .st-key-switch_theme_hero button {{
+                width: auto !important;
+                padding: 5px 14px !important;
+                font-size: 11px !important;
+            }}
+
+            /* Mobile Cockpit Footer Strip */
+            .sibs-hero-footer-bar {{
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+                padding: 12px 14px !important;
+                margin-top: 14px !important;
+                border-radius: 8px !important;
+            }}
+            .sibs-footer-stat-item {{
+                padding-bottom: 6px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }}
+            .sibs-footer-stat-item:last-child {{
+                border-bottom: none !important;
+                padding-bottom: 0 !important;
+            }}
+            .stat-label {{
+                font-size: 9px !important;
+            }}
+            .stat-value {{
+                font-size: 12px !important;
+            }}
+
+            /* Streamlit Columns Stacking on Handphone */
+            div[data-testid="stHorizontalBlock"] {{
+                flex-direction: column !important;
+                flex-wrap: nowrap !important;
+                gap: 12px !important;
+            }}
+            div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+                width: 100% !important;
+                flex: 1 1 100% !important;
+                min-width: 100% !important;
+                margin-bottom: 0px !important;
+            }}
+            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:empty {{
+                display: none !important;
+            }}
+
+            /* Mobile Buttons */
+            .stButton > button, [data-testid="stFormSubmitButton"] > button, [data-testid="stDownloadButton"] > button {{
+                width: 100% !important;
+                font-size: 12.5px !important;
+                padding: 0.65rem 1rem !important;
+                min-height: 42px !important;
+            }}
+
+            /* Mobile Cards & KPIs */
+            .sibs-card {{
+                padding: 14px 14px !important;
+                border-radius: 10px !important;
+                margin-bottom: 12px !important;
+            }}
+            .sibs-kpi {{
+                padding: 12px 14px !important;
+                border-radius: 10px !important;
+                margin-bottom: 8px !important;
+            }}
+            .sibs-kpi-label {{
+                font-size: 9.5px !important;
+                margin-bottom: 4px !important;
+            }}
+            .sibs-kpi-value {{
+                font-size: 20px !important;
+                margin-bottom: 2px !important;
+            }}
+            .sibs-kpi-sub {{
+                font-size: 10.5px !important;
+            }}
+
+            /* Mobile Tabs (Horizontal Swipe) */
+            .stTabs [data-baseweb="tab-list"] {{
+                gap: 12px !important;
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
+                -webkit-overflow-scrolling: touch !important;
+                scrollbar-width: none !important;
+                padding-bottom: 4px !important;
+                margin-bottom: 12px !important;
+            }}
+            .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {{
+                display: none !important;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                font-size: 12px !important;
+                padding: 6px 2px 8px 2px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }}
+
+            /* Header Status Box on Mobile */
+            .sibs-header-status-box {{
+                text-align: left !important;
+                padding-top: 0 !important;
+                margin-top: -8px !important;
+                margin-bottom: 8px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+            }}
+            .sibs-header-date {{
+                font-size: 11px !important;
+                opacity: 0.7 !important;
+                margin-top: 0 !important;
+            }}
+
+            /* Mobile Tables & Dataframes */
+            [data-testid="stDataFrame"], [data-testid="stTable"] {{
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }}
+            .sibs-card table td {{
+                font-size: 11px !important;
+                padding: 5px 0 !important;
+            }}
+
+            /* Mobile Floating Support */
+            .sibs-floating-support {{
+                bottom: 12px !important;
+                right: 12px !important;
+                padding: 7px 12px !important;
+                font-size: 11px !important;
+                gap: 5px !important;
+            }}
+
+            /* Mobile Inputs */
+            input, textarea, select, [data-baseweb="select"] {{
+                font-size: 14px !important;
+                min-height: 40px !important;
+            }}
+
+            /* Mobile Sidebar */
+            [data-testid="stSidebar"] {{
+                width: 84vw !important;
+                max-width: 320px !important;
+            }}
+        }}
+
         /* Print Media */
         @media print {{
             [data-testid="stSidebar"], header, footer, .stButton, .stTabs, hr, .sibs-floating-support {{ display:none !important; }}
@@ -802,6 +1140,344 @@ def apply_sibs_theme(theme: str = "light"):
         h1, h2, h3, h4, h5, h6 {{ color:#0F172A !important; }}
         p, span, label, div {{ color:#334155; }}
 
+        /* Header Status Box Base */
+        .sibs-header-status-box {{
+            text-align: right;
+            padding-top: 8px;
+        }}
+        .sibs-header-date {{
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }}
+
+        /* =========================================================================
+           RESPONSIVE DESIGN SYSTEM (PC, TABLET, HANDPHONE) — DARK MODE
+           ========================================================================= */
+
+        /* 1. PC / DESKTOP (> 1024px) */
+        @media screen and (min-width: 1025px) {{
+            .block-container {{
+                padding: 1.25rem 3.5rem 3rem 3.5rem !important;
+                max-width: 1440px !important;
+            }}
+            .sibs-navbar-container {{
+                padding: 16px 32px !important;
+            }}
+            .sibs-hero-wrapper, .st-key-sibs_hero_section {{
+                padding: 38px 46px 40px 46px !important;
+            }}
+            .sibs-hero-main-title {{
+                font-size: 42px !important;
+            }}
+            .sibs-hero-footer-bar {{
+                grid-template-columns: repeat(4, 1fr) !important;
+            }}
+        }}
+
+        /* 2. TABLET (641px - 1024px) */
+        @media screen and (min-width: 641px) and (max-width: 1024px) {{
+            .block-container {{
+                padding: 1rem 1.75rem 2.5rem 1.75rem !important;
+                max-width: 100% !important;
+            }}
+            .sibs-navbar-container {{
+                padding: 14px 20px !important;
+                margin-bottom: 18px !important;
+            }}
+            .sibs-brand-title {{
+                font-size: 16.5px !important;
+            }}
+            .sibs-brand-sub {{
+                font-size: 9.5px !important;
+                padding-left: 8px !important;
+            }}
+            .sibs-nav-links {{
+                gap: 14px !important;
+            }}
+            .sibs-nav-link {{
+                font-size: 12px !important;
+            }}
+            .sibs-hero-wrapper, .st-key-sibs_hero_section {{
+                padding: 28px 24px 30px 24px !important;
+                border-radius: 14px !important;
+                margin-bottom: 20px !important;
+            }}
+            .sibs-hero-main-title {{
+                font-size: 30px !important;
+                line-height: 1.2 !important;
+            }}
+            .sibs-hero-paragraph {{
+                font-size: 13.5px !important;
+                line-height: 1.6 !important;
+            }}
+            .sibs-hero-footer-bar {{
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+                padding: 14px 18px !important;
+            }}
+            .sibs-card {{
+                padding: 18px 20px !important;
+            }}
+            .sibs-kpi {{
+                padding: 16px 18px !important;
+            }}
+            .sibs-kpi-value {{
+                font-size: 23px !important;
+            }}
+
+            /* Responsive wrapping for 3+ column layouts on tablet */
+            div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"]:nth-child(3)) {{
+                flex-wrap: wrap !important;
+                gap: 14px !important;
+            }}
+            div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"]:nth-child(3)) > div[data-testid="column"] {{
+                flex: 1 1 calc(50% - 14px) !important;
+                min-width: calc(50% - 14px) !important;
+                max-width: 100% !important;
+            }}
+
+            .stTabs [data-baseweb="tab-list"] {{
+                gap: 16px !important;
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
+                -webkit-overflow-scrolling: touch !important;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                font-size: 13px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }}
+            .sibs-floating-support {{
+                bottom: 18px !important;
+                right: 18px !important;
+                padding: 9px 16px !important;
+                font-size: 12px !important;
+            }}
+        }}
+
+        /* 3. HANDPHONE / MOBILE (<= 640px) */
+        @media screen and (max-width: 640px) {{
+            .block-container {{
+                padding: 0.75rem 0.75rem 2.5rem 0.75rem !important;
+                max-width: 100% !important;
+            }}
+
+            /* Mobile Navbar (Stacked Header + Smooth Horizontal Swipable Links) */
+            .sibs-navbar-container {{
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding: 12px 14px !important;
+                margin-bottom: 14px !important;
+                gap: 10px !important;
+                border-radius: 10px !important;
+            }}
+            .sibs-brand-title {{
+                font-size: 15px !important;
+                justify-content: flex-start !important;
+                gap: 8px !important;
+            }}
+            .sibs-brand-sub {{
+                display: none !important;
+            }}
+            .sibs-nav-links {{
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                gap: 12px !important;
+                padding: 6px 2px 4px 2px !important;
+                scrollbar-width: none !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }}
+            .sibs-nav-links::-webkit-scrollbar {{
+                display: none !important;
+            }}
+            .sibs-nav-link {{
+                font-size: 11.5px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }}
+
+            /* Mobile Hero */
+            .sibs-hero-wrapper, .st-key-sibs_hero_section {{
+                padding: 18px 14px 20px 14px !important;
+                border-radius: 12px !important;
+                margin-bottom: 16px !important;
+                background-position: center center !important;
+            }}
+            .sibs-hero-tag, .sibs-hero-badge {{
+                font-size: 9px !important;
+                padding: 4px 8px !important;
+                letter-spacing: 0.4px !important;
+            }}
+            .sibs-hero-sub-title {{
+                font-size: 10px !important;
+                letter-spacing: 0.8px !important;
+                margin-bottom: 4px !important;
+            }}
+            .sibs-hero-main-title {{
+                font-size: 22px !important;
+                line-height: 1.25 !important;
+                margin: 6px 0 10px 0 !important;
+            }}
+            .sibs-hero-paragraph {{
+                font-size: 12px !important;
+                line-height: 1.55 !important;
+                margin-bottom: 14px !important;
+            }}
+
+            /* Switch Mode Button on Mobile */
+            .st-key-hero_switch_theme, .st-key-switch_theme_hero {{
+                display: flex !important;
+                justify-content: flex-start !important;
+                margin-top: 6px !important;
+            }}
+            .st-key-hero_switch_theme button, .st-key-switch_theme_hero button {{
+                width: auto !important;
+                padding: 5px 14px !important;
+                font-size: 11px !important;
+            }}
+
+            /* Mobile Cockpit Footer Strip */
+            .sibs-hero-footer-bar {{
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+                padding: 12px 14px !important;
+                margin-top: 14px !important;
+                border-radius: 8px !important;
+            }}
+            .sibs-footer-stat-item {{
+                padding-bottom: 6px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }}
+            .sibs-footer-stat-item:last-child {{
+                border-bottom: none !important;
+                padding-bottom: 0 !important;
+            }}
+            .stat-label {{
+                font-size: 9px !important;
+            }}
+            .stat-value {{
+                font-size: 12px !important;
+            }}
+
+            /* Streamlit Columns Stacking on Handphone */
+            div[data-testid="stHorizontalBlock"] {{
+                flex-direction: column !important;
+                flex-wrap: nowrap !important;
+                gap: 12px !important;
+            }}
+            div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+                width: 100% !important;
+                flex: 1 1 100% !important;
+                min-width: 100% !important;
+                margin-bottom: 0px !important;
+            }}
+            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:empty {{
+                display: none !important;
+            }}
+
+            /* Mobile Buttons */
+            .stButton > button, [data-testid="stFormSubmitButton"] > button, [data-testid="stDownloadButton"] > button {{
+                width: 100% !important;
+                font-size: 12.5px !important;
+                padding: 0.65rem 1rem !important;
+                min-height: 42px !important;
+            }}
+
+            /* Mobile Cards & KPIs */
+            .sibs-card {{
+                padding: 14px 14px !important;
+                border-radius: 10px !important;
+                margin-bottom: 12px !important;
+            }}
+            .sibs-kpi {{
+                padding: 12px 14px !important;
+                border-radius: 10px !important;
+                margin-bottom: 8px !important;
+            }}
+            .sibs-kpi-label {{
+                font-size: 9.5px !important;
+                margin-bottom: 4px !important;
+            }}
+            .sibs-kpi-value {{
+                font-size: 20px !important;
+                margin-bottom: 2px !important;
+            }}
+            .sibs-kpi-sub {{
+                font-size: 10.5px !important;
+            }}
+
+            /* Mobile Tabs (Horizontal Swipe) */
+            .stTabs [data-baseweb="tab-list"] {{
+                gap: 12px !important;
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
+                -webkit-overflow-scrolling: touch !important;
+                scrollbar-width: none !important;
+                padding-bottom: 4px !important;
+                margin-bottom: 12px !important;
+            }}
+            .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {{
+                display: none !important;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                font-size: 12px !important;
+                padding: 6px 2px 8px 2px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }}
+
+            /* Header Status Box on Mobile */
+            .sibs-header-status-box {{
+                text-align: left !important;
+                padding-top: 0 !important;
+                margin-top: -8px !important;
+                margin-bottom: 8px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+            }}
+            .sibs-header-date {{
+                font-size: 11px !important;
+                opacity: 0.7 !important;
+                margin-top: 0 !important;
+            }}
+
+            /* Mobile Tables & Dataframes */
+            [data-testid="stDataFrame"], [data-testid="stTable"] {{
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }}
+            .sibs-card table td {{
+                font-size: 11px !important;
+                padding: 5px 0 !important;
+            }}
+
+            /* Mobile Floating Support */
+            .sibs-floating-support {{
+                bottom: 12px !important;
+                right: 12px !important;
+                padding: 7px 12px !important;
+                font-size: 11px !important;
+                gap: 5px !important;
+            }}
+
+            /* Mobile Inputs */
+            input, textarea, select, [data-baseweb="select"] {{
+                font-size: 14px !important;
+                min-height: 40px !important;
+            }}
+
+            /* Mobile Sidebar */
+            [data-testid="stSidebar"] {{
+                width: 84vw !important;
+                max-width: 320px !important;
+            }}
+        }}
+
         /* Print Media */
         @media print {{
             [data-testid="stSidebar"], header, footer, .stButton, .stTabs, hr, .sibs-floating-support {{ display:none !important; }}
@@ -891,9 +1567,9 @@ def render_page_header(title: str, subtitle: str, badge: str = "SIBS", show_back
         """, unsafe_allow_html=True)
     with col_status:
         st.markdown(f"""
-            <div style="text-align:right; padding-top:8px;">
+            <div class="sibs-header-status-box">
                 <span class="status-pill-green">SISTEM AKTIF</span>
-                <div style="font-size:11px; opacity:0.7; margin-top:4px;">
+                <div class="sibs-header-date">
                     {datetime.now().strftime('%d %B %Y')}
                 </div>
             </div>
